@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Domain Balance Assessment</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color-dark: #111827; --bg-color-medium: #1F2937; --bg-color-light: #374151;
+            --border-color: #4B5563; --text-color-primary: #F9FAFB; --text-color-secondary: #D1D5DB;
+            --text-color-muted: #9CA3AF; --accent-color-primary: #6366F1; --accent-color-secondary: #818CF8;
+            --accent-color-secondary-rgb: 129, 140, 248; /* Added for focus */
+            --font-primary: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --border-radius-sm: 4px; --border-radius-md: 8px; --border-radius-lg: 12px;
+            --feedback-button-color: #f59e0b; --feedback-button-hover-color: #fde047;
+        }
+        /* Base styles */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { height: 100%; }
+        body { min-height: 100%; font-family: var(--font-primary); background-color: var(--bg-color-dark); color: var(--text-color-primary); line-height: 1.6; font-weight: 400; overflow-x: hidden; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; margin-bottom: 40px; padding: 20px 0; }
+        h1 { font-size: 36px; margin-bottom: 10px; color: var(--text-color-primary); font-weight: 600; }
+        .subtitle { color: var(--text-color-muted); font-size: 18px; font-weight: 300; }
+
+        /* Wheel container & elements */
+        .wheel-container { position: relative; max-width: 700px; margin: 30px auto 40px; }
+        .wheel-svg { display: block; width: 100%; height: auto; cursor: default; }
+        .progress-tracker { position: absolute; top: 20px; right: 20px; background-color: var(--bg-color-medium); padding: 8px 16px; border-radius: var(--border-radius-lg); font-weight: 500; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); border: 1px solid var(--border-color); z-index: 10; font-size: 14px; color: var(--text-color-secondary); }
+        #completion-count { font-weight: 700; color: var(--text-color-primary); }
+        .report-button { display: none; position: absolute; top: 20px; left: 20px; background-color: var(--accent-color-primary); color: white; padding: 8px 16px; border-radius: var(--border-radius-lg); font-weight: 500; cursor: pointer; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); border: none; z-index: 10; font-size: 14px; transition: background-color 0.2s ease, transform 0.2s ease; }
+        .report-button:hover { background-color: var(--accent-color-secondary); transform: scale(1.05); }
+        .report-button.active { display: block; }
+
+        /* Wheel Rotation Animation */
+        @keyframes rotateWheel { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        #wheel-rotating-group { animation: rotateWheel 60s linear infinite; transform-origin: center center; }
+        .wheel-container:hover #wheel-rotating-group { animation-play-state: paused; }
+
+        /* Domain section styling */
+         .domain-section { cursor: pointer; transition: filter 0.2s ease-out, opacity 0.2s ease-out, stroke 0.2s ease-out; }
+         .wheel-container:hover .domain-section:not(.completed) { filter: brightness(1.15); opacity: 1; }
+         .domain-section.selected { stroke-width: 5; stroke: var(--accent-color-secondary); filter: brightness(1.1); }
+         .domain-section.completed { filter: saturate(0.7) brightness(0.7); opacity: 0.6; cursor: default; }
+         .completion-marker { pointer-events: none; }
+         .domain-label { pointer-events: none; user-select: none; font-weight: 500; fill: var(--text-color-primary); font-size: 14px; }
+         .center-text { pointer-events: none; user-select: none; }
+
+        /* Domain details panel */
+        .domain-panel { background-color: var(--bg-color-light); border-radius: var(--border-radius-lg); padding: 35px 40px; margin: 20px auto 40px; max-width: 800px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); border: 1px solid var(--border-color); transition: all 0.3s ease; display: none; }
+        .domain-panel.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .domain-title { font-size: 30px; font-weight: 600; margin-bottom: 10px; }
+        .domain-description { color: var(--text-color-secondary); margin-bottom: 25px; line-height: 1.6; font-size: 15px; }
+        .section-title { font-size: 18px; font-weight: 600; color: var(--text-color-primary); padding-bottom: 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; }
+
+        /* Step indicators for wizard */
+        .step-indicators { display: flex; justify-content: center; margin-bottom: 25px; }
+        .step-indicator { width: 10px; height: 10px; border-radius: 50%; background-color: var(--bg-color-medium); margin: 0 5px; transition: all 0.3s ease; }
+        .step-indicator.active { background-color: var(--domain-color, var(--accent-color-primary)); transform: scale(1.2); }
+
+        /* Steps container */
+        .step-container { display: none; }
+        .step-container.active { display: block; animation: fadeIn 0.4s ease; }
+        
+        /* Progress bar */
+        .progress-bar-container { width: 100%; height: 6px; background-color: var(--bg-color-medium); border-radius: 3px; margin-bottom: 30px; overflow: hidden; }
+        .progress-bar { height: 100%; width: 0%; background-color: var(--domain-color, var(--accent-color-primary)); transition: width 0.4s ease; }
+
+        /* Direct Question Styling */
+        .direct-question-section { margin-bottom: 30px; padding: 15px 20px; background-color: rgba(0,0,0,0.1); border-radius: var(--border-radius-md); border-left: 4px solid var(--domain-color, var(--accent-color-secondary)); }
+        #direct-question-text { color: var(--text-color-primary); font-size: 17px; font-weight: 500; line-height: 1.6; font-style: normal; }
+
+        /* Feeling Tags Styles */
+        .feeling-section { margin-bottom: 30px; }
+        .feeling-section label { color: var(--text-color-secondary); font-size: 15px; display: block; margin-bottom: 15px; font-weight: 500; }
+        .feeling-tags-container { display: flex; flex-wrap: wrap; gap: 10px; }
+        .feeling-tag { padding: 7px 14px; border-radius: var(--border-radius-lg); background-color: var(--bg-color-medium); color: var(--text-color-secondary); cursor: pointer; transition: all 0.2s ease; font-size: 13px; font-weight: 500; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .feeling-tag:hover { background-color: var(--border-color); color: var(--text-color-primary); transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.15); }
+        .feeling-tag.selected { background-color: var(--domain-color, var(--accent-color-primary)); color: var(--bg-color-dark); border-color: transparent; font-weight: 600; box-shadow: 0 2px 5px rgba(var(--domain-color-rgb, 129, 140, 248), 0.4); }
+
+        /* Rating section, Slider */
+        .rating-section { margin-bottom: 30px; border: none; background-color: transparent; padding: 0; }
+        .rating-images { display: flex; justify-content: space-between; margin-bottom: 20px; padding: 0 10px; }
+        .image-container { text-align: center; flex: 1; max-width: 100px; }
+        .image-box { width: 70px; height: 70px; background-color: var(--bg-color-medium); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; margin: 0 auto 8px auto; }
+        .image-box svg path { stroke-width: 1.5; } .image-label { font-size: 13px; color: var(--text-color-muted); }
+        .slider-container { margin-top: 20px; }
+        .slider-labels { display: flex; justify-content: space-between; margin-bottom: 8px; color: var(--text-color-muted); font-size: 13px; }
+        .slider-value { font-size: 22px; font-weight: 600; text-align: center; color: var(--domain-color, var(--text-color-primary)); margin-bottom: 8px; }
+        .slider { -webkit-appearance: none; width: 100%; height: 10px; background: var(--bg-color-dark); border-radius: 5px; outline: none; cursor: pointer; transition: background-color 0.2s ease; }
+        .slider:hover { background: var(--bg-color-light); }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--domain-color, var(--accent-color-secondary)); cursor: pointer; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); border: 2px solid var(--bg-color-medium); transition: transform 0.1s ease, background-color 0.2s ease; }
+        .slider:active::-webkit-slider-thumb { transform: scale(1.15); background: var(--domain-color, var(--accent-color-primary)); }
+
+        /* Desired State & Next Step Sections */
+        .desired-state-section, .next-step-section { margin-bottom: 30px; }
+        label { color: var(--text-color-secondary); font-size: 15px; display: block; margin-bottom: 10px; font-weight: 500; }
+        .short-input { width: 100%; padding: 12px 15px; background-color: var(--bg-color-medium); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); color: var(--text-color-primary); font-family: inherit; font-size: 16px; line-height: 1.5; transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease; }
+        .short-input:focus { outline: none; border-color: var(--domain-color, var(--accent-color-secondary)); background-color: var(--bg-color-light); box-shadow: 0 0 0 3px rgba(var(--domain-color-rgb, 129, 140, 248), 0.4); }
+
+        /* Action Buttons */
+        .action-buttons { display: flex; justify-content: space-between; gap: 15px; margin-top: 35px; }
+        .btn { padding: 11px 24px; border: none; border-radius: var(--border-radius-md); font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; flex-grow: 1; max-width: 200px; }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .btn:active { transform: translateY(0px); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .btn-cancel { background-color: var(--bg-color-light); color: var(--text-color-secondary); border: 1px solid var(--border-color); }
+        .btn-cancel:hover { background-color: var(--border-color); color: var(--text-color-primary); }
+        .btn-submit { background-color: var(--domain-color, var(--accent-color-primary)); color: #111827; }
+        .btn-submit:hover { filter: brightness(1.1); }
+
+        /* Help message */
+        .help-message { text-align: center; background-color: var(--bg-color-light); padding: 30px 40px; border-radius: var(--border-radius-lg); max-width: 600px; margin: 40px auto; border: 1px solid var(--border-color); }
+        .help-title { font-size: 22px; margin-bottom: 15px; color: var(--text-color-primary); font-weight: 500; }
+        .help-text { color: var(--text-color-secondary); font-size: 16px; }
+
+        /* Debug info */
+        .debug-info { position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); color: #fff; padding: 8px 12px; border-radius: var(--border-radius-md); font-size: 14px; z-index: 1002; display: none; opacity: 1; transition: opacity 0.5s ease; }
+        .debug-info.fade-out { opacity: 0; }
+
+        /* Gender Popup Styles */
+        #gender-popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); opacity: 1; visibility: visible; transition: opacity 0.3s ease, visibility 0.3s ease; }
+        #gender-popup-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        #gender-popup-content { background-color: var(--bg-color-light); padding: 35px 40px; border-radius: var(--border-radius-lg); text-align: center; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color); max-width: 500px; width: 90%; }
+        #gender-popup-content h2 { color: var(--text-color-primary); margin-bottom: 20px; font-size: 24px; font-weight: 600; }
+        #gender-popup-content p { color: var(--text-color-secondary); margin-bottom: 35px; font-size: 16px; }
+        .gender-button-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
+        .gender-btn { min-width: 130px; flex-grow: 0; background-color: var(--bg-color-medium); color: var(--text-color-secondary); border: 1px solid var(--border-color); }
+        .gender-btn[data-gender="Female"]:hover { background-color: #FF9AA2; color: #111827; border-color: #FF9AA2; }
+        .gender-btn[data-gender="Male"]:hover { background-color: #A2D2FF; color: #111827; border-color: #A2D2FF; }
+        .gender-btn[data-gender="Non-binary"]:hover { background-color: #B5EAD7; color: #111827; border-color: #B5EAD7; }
+        .gender-btn[data-gender="Prefer not to say"]:hover { background-color: var(--text-color-muted); color: var(--bg-color-dark); border-color: var(--text-color-muted); }
+
+        /* Feedback Button Styles */
+        #feedback-button { position: fixed; bottom: 20px; right: 20px; background-color: var(--feedback-button-color); color: var(--bg-color-dark); border-radius: 50%; width: 60px; height: 60px; border: none; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 999; transition: background-color 0.2s ease, transform 0.2s ease; }
+        #feedback-button:hover { background-color: var(--feedback-button-hover-color); transform: scale(1.1); }
+        #feedback-button svg { width: 28px; height: 28px; fill: currentColor; }
+
+        /* Feedback Modal Styles */
+        #feedback-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); z-index: 1001; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
+        #feedback-modal.visible { opacity: 1; visibility: visible; }
+        .feedback-modal-content { background-color: var(--bg-color-light); padding: 30px 35px; border-radius: var(--border-radius-lg); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color); max-width: 600px; width: 90%; position: relative; max-height: 85vh; overflow-y: auto; }
+        .feedback-modal-close-btn { position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: var(--text-color-muted); font-size: 24px; line-height: 1; cursor: pointer; padding: 5px; }
+        .feedback-modal-close-btn:hover { color: var(--text-color-primary); }
+        .feedback-modal-content h2 { color: var(--text-color-primary); margin-bottom: 25px; font-size: 22px; font-weight: 600; text-align: center; }
+        .feedback-form-group { margin-bottom: 20px; }
+        .feedback-form-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 15px; color: var(--text-color-secondary); }
+        .feedback-form-group textarea, .feedback-form-group input[type="email"] { width: 100%; padding: 10px 12px; background-color: var(--bg-color-medium); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); color: var(--text-color-primary); font-family: inherit; font-size: 15px; line-height: 1.5; }
+        .feedback-form-group textarea { min-height: 80px; resize: vertical; }
+        .feedback-form-group textarea:focus, .feedback-form-group input[type="email"]:focus { outline: none; border-color: var(--accent-color-secondary); background-color: var(--bg-color-light); box-shadow: 0 0 0 2px rgba(var(--accent-color-secondary-rgb), 0.3); }
+        .feedback-submit-button { width: 100%; margin-top: 10px; background-color: var(--feedback-button-color); color: var(--bg-color-dark); }
+        .feedback-submit-button:hover { background-color: var(--feedback-button-hover-color); }
+
+        /* Email Modal Styles */
+        #email-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); z-index: 1001; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
+        #email-modal.visible { opacity: 1; visibility: visible; }
+        .email-modal-content { background-color: var(--bg-color-light); padding: 30px 35px; border-radius: var(--border-radius-lg); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color); max-width: 600px; width: 90%; position: relative; max-height: 85vh; overflow-y: auto; }
+        .email-modal-close-btn { position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: var(--text-color-muted); font-size: 24px; line-height: 1; cursor: pointer; padding: 5px; }
+        .email-modal-close-btn:hover { color: var(--text-color-primary); }
+        .email-modal-content h2 { color: var(--text-color-primary); margin-bottom: 25px; font-size: 22px; font-weight: 600; text-align: center; }
+        .email-form-group { margin-bottom: 20px; }
+        .email-form-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 15px; color: var(--text-color-secondary); }
+        .email-form-group input[type="email"] { width: 100%; padding: 10px 12px; background-color: var(--bg-color-medium); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); color: var(--text-color-primary); font-family: inherit; font-size: 15px; line-height: 1.5; }
+        .email-form-group input[type="email"]:focus { outline: none; border-color: var(--accent-color-secondary); background-color: var(--bg-color-light); box-shadow: 0 0 0 2px rgba(var(--accent-color-secondary-rgb), 0.3); }
+        .email-submit-button { width: 100%; margin-top: 10px; background-color: var(--feedback-button-color); color: var(--bg-color-dark); }
+        .email-submit-button:hover { background-color: var(--feedback-button-hover-color); }
+
+        /* Responsive styles */
+        @media (max-width: 768px) { /* ... Styles unchanged ... */ }
+        @media (max-width: 480px) { /* ... Styles unchanged ... */ }
+
+    </style>
+</head>
+<body>
+
+    <div id="gender-popup-overlay">
+         <div id="gender-popup-content">
+             <h2>Help us personalize your experience</h2>
+             <p>Please select your gender. This information helps us tailor insights in the future.</p>
+             <div class="gender-button-container">
+                  <button class="gender-btn btn" data-gender="Female">Female</button>
+                  <button class="gender-btn btn" data-gender="Male">Male</button>
+                  <button class="gender-btn btn" data-gender="Non-binary">Non-binary</button>
+                  <button class="gender-btn btn" data-gender="Prefer not to say">Prefer not to say</button>
+             </div>
+          </div>
+     </div>
+
+    <div class="container">
+        <header>
+            <h1>Life Domain Balance Assessment</h1>
+            <p class="subtitle">Explore and evaluate different areas of your life</p>
+        </header>
+
+        <div class="wheel-container">
+            <button id="report-button" class="report-button">Generate Report</button>
+            <div class="progress-tracker">
+                <span id="completion-count">0</span> / 12 Domains Completed
+            </div>
+            <svg id="wheel-svg" class="wheel-svg" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+                </svg>
+        </div>
+
+        <div id="help-message" class="help-message">
+            <h3 class="help-title">Click on a section to begin</h3>
+            <p class="help-text">Select any life domain from the wheel above to reflect on your current state and desired direction in that area.</p>
+        </div>
+
+        <div id="domain-panel" class="domain-panel">
+             <h2 id="domain-title" class="domain-title"></h2>
+             <p id="domain-description" class="domain-description"></p>
+             
+             <div class="progress-bar-container">
+                <div id="progress-bar" class="progress-bar"></div>
+             </div>
+             
+             <div class="step-indicators">
+                <div class="step-indicator active" data-step="1"></div>
+                <div class="step-indicator" data-step="2"></div>
+             </div>
+
+             <div id="step-1" class="step-container active">
+                <div class="direct-question-section"><p id="direct-question-text"></p></div>
+                <div class="feeling-section">
+                    <h3 class="section-title">Immediate Reaction</h3>
+                    <label>Based on the question above, what's your immediate reaction or feeling? Select any that apply.</label>
+                    <div id="feeling-tags-container"></div>
+                </div>
+                <div class="rating-section">
+                    <h3 class="section-title">Your Assessment</h3>
+                    <div class="rating-images">
+                       <div class="image-container"> <div class="image-box"><svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="var(--text-color-muted)" stroke-width="1.5"/><path d="M8 16C8 16 9.5 14 12 14C14.5 14 16 16 16 16" stroke="var(--text-color-muted)" stroke-width="1.5"/><path d="M9 9H9.01" stroke="var(--text-color-muted)" stroke-width="2.5"/><path d="M15 9H15.01" stroke="var(--text-color-muted)" stroke-width="2.5"/></svg></div> <div class="image-label">Low (1)</div> </div>
+                       <div class="image-container"> <div class="image-box"><svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="var(--text-color-secondary)" stroke-width="1.5"/><path d="M8 14C8 14 9.5 17 12 17C14.5 17 16 14 16 14" stroke="var(--text-color-secondary)" stroke-width="1.5"/><path d="M9 9H9.01" stroke="var(--text-color-secondary)" stroke-width="2.5"/><path d="M15 9H15.01" stroke="var(--text-color-secondary)" stroke-width="2.5"/></svg></div> <div class="image-label">High (10)</div> </div>
+                    </div>
+                    <div class="slider-container">
+                         <label for="rating-slider" style="text-align: center; margin-bottom:15px; display:block;">Rate your current state (1 = Low, 10 = High):</label>
+                         <div id="slider-value" class="slider-value">5</div>
+                        <div class="slider-labels"><span>1</span><span>10</span></div>
+                        <input type="range" id="rating-slider" class="slider" min="1" max="10" value="5">
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button id="cancel-button" class="btn btn-cancel">Cancel</button>
+                    <button id="next-step-button" class="btn btn-submit">Continue</button>
+                </div>
+             </div>
+
+             <div id="step-2" class="step-container">
+                <div class="desired-state-section">
+                    <h3 class="section-title">Positive Breakthrough</h3>
+                    <label for="desired-keyword-input">What would a positive breakthrough in this domain look like?</label>
+                    <input type="text" id="desired-keyword-input" class="short-input" placeholder="e.g., Finding deeper connections, Financial freedom, Peak health...">
+                </div>
+                <div class="next-step-section">
+                    <h3 class="section-title">Current Challenges</h3>
+                    <label for="next-step-input">What's holding me back from experiencing the breakthrough?</label>
+                    <input type="text" id="next-step-input" class="short-input" placeholder="e.g., Fear of rejection, Limited resources, Inconsistent habits...">
+                </div>
+                <div class="action-buttons">
+                    <button id="back-button" class="btn btn-cancel">Back</button>
+                    <button id="submit-button" class="btn btn-submit">Save Reflection</button>
+                </div>
+             </div>
+        </div>
+
+        <div id="debug-info" class="debug-info">Status updates appear here</div>
+
+    </div> <button id="feedback-button" title="Suggest Improvement">
+         <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z"/></svg>
+     </button>
+
+    <div id="feedback-modal">
+          <div class="feedback-modal-content">
+              <button class="feedback-modal-close-btn" id="feedback-modal-close-btn">&times;</button>
+              <h2>Help Us Improve!</h2>
+              <form id="feedback-form">
+                  <div class="feedback-form-group">
+                      <label for="feedback-text">Your feedback or suggestion:</label>
+                      <textarea id="feedback-text" name="feedback" placeholder="Please share your thoughts, suggestions, or any issues you encountered..." required></textarea>
+                  </div>
+                  <div class="feedback-form-group">
+                      <label for="feedback-email">Email (optional):</label>
+                      <input type="email" id="feedback-email" name="email" placeholder="Your email address if you'd like us to follow up">
+                  </div>
+                  <button type="submit" class="btn feedback-submit-button">Submit Feedback</button>
+              </form>
+          </div>
+      </div>
+
+    <div id="email-modal">
+        <div class="email-modal-content">
+            <button class="email-modal-close-btn" id="email-modal-close-btn">&times;</button>
+            <h2>Receive Your Report</h2>
+            <p style="color: var(--text-color-secondary); margin-bottom: 20px; text-align: center;">Enter your email if you'd like to receive your report</p>
+            <form id="email-form">
+                <div class="email-form-group">
+                    <label for="report-email">Email:</label>
+                    <input type="email" id="report-email" name="email" placeholder="Your email address" required>
+                </div>
+                <div style="display: flex; gap: 15px; margin-top: 20px;">
+                    <button type="button" id="email-skip-button" class="btn btn-cancel" style="flex: 1;">Skip</button>
+                    <button type="submit" class="btn feedback-submit-button" style="flex: 1;">Send Report</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Wrap entire script in a try...catch
+        try {
+            document.addEventListener('DOMContentLoaded', function() {
+                // console.log("DOMContentLoaded event fired."); // Debug log removed
+
+                // Domains data
+                 const domains = [
+                     { id: 1, name: "Sexual Power", color: "#FF9AA2", colorRgb: "255, 154, 162", description: "Relationship with sexual energy, desire, expression.", directQuestion: "How authentically can you express your desires and boundaries in intimacy?" },
+                     { id: 2, name: "Altruism", color: "#FFB7B2", colorRgb: "255, 183, 178", description: "Selfless concern for others, kindness, contribution.", directQuestion: "Does giving to others currently leave you feeling more energized or depleted?" },
+                     { id: 3, name: "Work Ethics", color: "#FFDAC1", colorRgb: "255, 218, 193", description: "Principles, values, discipline in work.", directQuestion: "How often does your daily work align with what you find personally meaningful?" },
+                     { id: 4, name: "Friends", color: "#E2F0CB", colorRgb: "226, 240, 203", description: "Quality and depth of non-familial social bonds.", directQuestion: "When facing difficulties, how confident are you that your friends offer genuine support?" },
+                     { id: 5, name: "Faith", color: "#B5EAD7", colorRgb: "181, 234, 215", description: "Relationship with something greater; meaning, transcendence.", directQuestion: "Does your faith/spirituality currently serve as a reliable source of inner strength or peace?" },
+                     { id: 6, name: "Me", color: "#C7CEEA", colorRgb: "199, 206, 234", description: "Relationship with self: awareness, acceptance, care.", directQuestion: "How consistently are you prioritizing activities solely dedicated to your own rest and rejuvenation?" },
+                     { id: 7, name: "Money", color: "#D4A5A5", colorRgb: "212, 165, 165", description: "Relationship with finances: mindset, literacy, values.", directQuestion: "To what extent do you feel your financial situation empowers you versus restricts you?" },
+                     { id: 8, name: "Growth", color: "#9ADBC5", colorRgb: "154, 219, 197", description: "Ongoing development: intellectual, emotional, spiritual.", directQuestion: "Are you actively engaging in learning or experiences that genuinely excite and challenge you?" },
+                     { id: 9, name: "Family", color: "#A2D2FF", colorRgb: "162, 210, 255", description: "Relationship with family; dynamics, belonging.", directQuestion: "How often do interactions with your family leave you feeling respected and understood?" },
+                     { id: 10, name: "Hobby", color: "#FDFFB6", colorRgb: "253, 255, 182", description: "Activities for pleasure, fulfillment, play.", directQuestion: "How frequently do you make guilt-free time for hobbies that bring you pure enjoyment?" },
+                     { id: 11, name: "Health", color: "#BDB2FF", colorRgb: "189, 178, 255", description: "Physical and mental wellbeing; self-care.", directQuestion: "Are your current health habits providing the physical and mental energy you desire?" },
+                     { id: 12, name: "Intimacy", color: "#FFC6FF", colorRgb: "255, 198, 255", description: "Deep connection, vulnerability, trust.", directQuestion: "How safe do you feel expressing your complete, vulnerable self in your closest relationship(s)?" }
+                 ];
+                // Added back: Feeling Tags
+                const feelingTags = [ "Energized", "Inspired", "Content", "Connected", "Confident", "Hopeful", "Grateful", "Secure", "Balanced", "Flow", "Calm", "Joyful", "Drained", "Stressed", "Frustrated", "Isolated", "Anxious", "Stuck", "Resentful", "Confused", "Overwhelmed", "Numb", "Sad", "Angry" ];
+
+                // User state object
+                const userState = { 
+                    userId: generateUserId(),
+                    gender: null, 
+                    selectedDomain: null, 
+                    completedDomains: [],
+                    domainRatings: {} // Stores { rating, selectedFeelings, desiredKeyword, blocker, timestamp }
+                };
+                
+                // Generate consistent user ID for the session
+                function generateUserId() {
+                    let userId = sessionStorage.getItem('wheelOfLife_userId');
+                    if (!userId) {
+                        userId = 'user_' + Math.random().toString(36).substr(2, 9);
+                        sessionStorage.setItem('wheelOfLife_userId', userId);
+                    }
+                    return userId;
+                }
+
+                // DOM elements
+                const wheelSvg = document.getElementById('wheel-svg');
+                const domainPanel = document.getElementById('domain-panel');
+                const helpMessage = document.getElementById('help-message');
+                const completionCount = document.getElementById('completion-count');
+                const reportButton = document.getElementById('report-button');
+                const debugInfo = document.getElementById('debug-info');
+                const genderPopupOverlay = document.getElementById('gender-popup-overlay');
+                const genderButtons = document.querySelectorAll('.gender-btn');
+                const feedbackButton = document.getElementById('feedback-button');
+                const feedbackModal = document.getElementById('feedback-modal');
+                const feedbackModalCloseBtn = document.getElementById('feedback-modal-close-btn');
+                const feedbackForm = document.getElementById('feedback-form');
+
+                // Check essential elements
+                 if (!wheelSvg || !domainPanel || !helpMessage || !genderPopupOverlay || !feedbackModal) {
+                     console.error("CRITICAL ERROR: Essential HTML elements not found. Aborting script initialization.");
+                     if(document.body) document.body.innerHTML = '<p style="color: red; font-size: 20px; padding: 20px;">Error: Could not initialize the application. Essential elements are missing.</p>';
+                     return;
+                 }
+
+                let messageTimeout;
+                
+                // Add event listener for the report button
+                if (reportButton) reportButton.addEventListener('click', generateReport);
+
+                // --- Gender Popup Logic (Cleaned) ---
+                function handleGenderSelection(event) {
+                    if (!genderPopupOverlay) { console.error("ERROR in handleGenderSelection: genderPopupOverlay element not found!"); return; }
+                    const selectedGender = event.target.getAttribute('data-gender');
+                    if (selectedGender !== null) {
+                        userState.gender = selectedGender;
+                        sessionStorage.setItem('wheelOfLife_gender', selectedGender);
+                        genderPopupOverlay.classList.add('hidden');
+                        // console.log("Gender selected:", userState.gender); // Optional log
+                    } else { console.error("Could not read data-gender attribute from clicked element:", event.target); }
+                }
+                
+                // Load gender from session storage if available
+                function loadSavedGender() {
+                    const savedGender = sessionStorage.getItem('wheelOfLife_gender');
+                    if (savedGender && genderPopupOverlay) {
+                        userState.gender = savedGender;
+                        genderPopupOverlay.classList.add('hidden');
+                    }
+                }
+                if (genderButtons.length > 0) { genderButtons.forEach(button => button.addEventListener('click', handleGenderSelection)); }
+                else { console.error("No gender buttons found - cannot attach listeners."); }
+
+                // --- Feedback Modal Logic (Cleaned) ---
+                function showFeedbackModal() { if(feedbackModal) feedbackModal.classList.add('visible'); }
+                function hideFeedbackModal() { if(feedbackModal) feedbackModal.classList.remove('visible'); }
+                if (feedbackButton) feedbackButton.addEventListener('click', showFeedbackModal); else console.warn("Feedback button not found.");
+                if (feedbackModalCloseBtn) feedbackModalCloseBtn.addEventListener('click', hideFeedbackModal); else console.warn("Feedback modal close button not found.");
+                if (feedbackModal) feedbackModal.addEventListener('click', (event) => { if (event.target === feedbackModal) { hideFeedbackModal(); } }); else console.warn("Feedback modal not found.");
+                
+                // Feedback form handling
+                if (feedbackForm) {
+                    feedbackForm.addEventListener('submit', (event) => {
+                        event.preventDefault();
+                        const formData = new FormData(feedbackForm); const feedbackData = {};
+                        for (const [key, value] of formData.entries()) { feedbackData[key] = value.trim(); }
+                        feedbackData.submittedAt = new Date().toISOString(); 
+                        feedbackData.currentPage = window.location.pathname;
+                        
+                        // Get additional assessment data if available
+                        if (userState.selectedDomain) {
+                            feedbackData.currentDomain = userState.selectedDomain.name;
+                        }
+                        feedbackData.completedDomains = userState.completedDomains.length;
+                        feedbackData.gender = userState.gender || 'Not specified';
+                        
+                        console.log("Feedback submitted:", JSON.stringify(feedbackData, null, 2));
+                        
+                        // Send to n8n webhook which will store in Supabase
+                        submitFeedbackToSupabase(feedbackData);
+                        
+                        feedbackForm.reset(); 
+                        hideFeedbackModal(); 
+                        showTemporaryMessage("Feedback Received! Thank you.", "success");
+                    });
+                } else { console.warn("Feedback form not found."); }
+                
+                // Function to submit feedback to Supabase via n8n webhook
+                function submitFeedbackToSupabase(feedbackData) {
+                    const webhookUrl = 'https://fluxxx.app.n8n.cloud/webhook/5b322439-d37f-4ae1-88e6-878e3af43fbe';
+                    
+                    // Format data to match database schema
+                    const formattedData = {
+                        type: 'user_feedback',
+                        data: {
+                            user_id: userState.userId,
+                            feedback: feedbackData.feedback,
+                            email: feedbackData.email || null,
+                            current_page: feedbackData.currentPage,
+                            current_domain: feedbackData.currentDomain || null,
+                            completed_domains: feedbackData.completedDomains,
+                            submitted_at: feedbackData.submittedAt,
+                            // Include gender to update user record
+                            gender: feedbackData.gender
+                        }
+                    };
+                    
+                    fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(formattedData)
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Feedback successfully submitted to Supabase:', data);
+                    })
+                    .catch(error => {
+                        console.error('Error submitting feedback:', error);
+                        // Still show success to user, log error only for debugging
+                    });
+                }
+                
+                // --- Email Modal Logic ---
+                const emailModal = document.getElementById('email-modal');
+                const emailModalCloseBtn = document.getElementById('email-modal-close-btn');
+                const emailForm = document.getElementById('email-form');
+                const emailSkipButton = document.getElementById('email-skip-button');
+                
+                function showEmailModal() { 
+                    console.log("showEmailModal called", emailModal);
+                    if(emailModal) {
+                        emailModal.classList.add('visible');
+                        console.log("Added visible class", emailModal.classList.contains('visible'));
+                    }
+                }
+                function hideEmailModal() { if(emailModal) emailModal.classList.remove('visible'); }
+                
+                if (emailModalCloseBtn) emailModalCloseBtn.addEventListener('click', hideEmailModal);
+                if (emailModal) emailModal.addEventListener('click', (event) => { if (event.target === emailModal) { hideEmailModal(); } });
+                
+                if (emailSkipButton) {
+                    emailSkipButton.addEventListener('click', function() {
+                        hideEmailModal();
+                        submitReportWithoutEmail();
+                    });
+                }
+                
+                if (emailForm) {
+                    emailForm.addEventListener('submit', function(event) {
+                        event.preventDefault();
+                        const email = document.getElementById('report-email').value.trim();
+                        if (email) {
+                            submitReportWithEmail(email);
+                            hideEmailModal();
+                        } else {
+                            showTemporaryMessage("Please enter a valid email address.", "error");
+                        }
+                    });
+                }
+                
+                function submitReportWithEmail(email) {
+                    if (userState.completedDomains.length < 3) { 
+                        showTemporaryMessage("Complete at least 3 domains first.", "error"); 
+                        return; 
+                    }
+                    
+                    // Check if email is valid
+                    if (!email || email.trim() === '') {
+                        showTemporaryMessage("Please enter a valid email address.", "error");
+                        return;
+                    }
+                    
+                    const reportData = prepareReportData();
+                    reportData.email = email;
+                    
+                    submitReportToWebhook(reportData);
+                }
+                
+                function submitReportWithoutEmail() {
+                    if (userState.completedDomains.length < 3) { 
+                        showTemporaryMessage("Complete at least 3 domains first.", "error"); 
+                        return; 
+                    }
+                    
+                    const reportData = prepareReportData();
+                    submitReportToWebhook(reportData);
+                }
+                
+                function prepareReportData() {
+                    return { 
+                        userId: userState.userId, 
+                        gender: userState.gender, 
+                        assessmentDate: new Date().toISOString(),
+                        completedReflections: userState.completedDomains.map(id => {
+                            const domain = domains.find(d => d.id === id); 
+                            const ratingData = userState.domainRatings[id] || {};
+                            return { 
+                                domainId: id, 
+                                domainName: domain.name, 
+                                directQuestion: domain.directQuestion, 
+                                rating: ratingData.rating, 
+                                selectedFeelings: ratingData.selectedFeelings || [], 
+                                desiredKeyword: ratingData.desiredKeyword || '', 
+                                blocker: ratingData.blocker || '', 
+                                timestamp: ratingData.timestamp 
+                            };
+                        })
+                    };
+                }
+                
+                function submitReportToWebhook(reportData) {
+                    const webhookUrl = 'https://fluxxx.app.n8n.cloud/webhook/3dfbd85d-0f09-40db-a6d5-90fcb0f6c221';
+                    
+                    showTemporaryMessage("Generating report...", "info");
+                    
+                    fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            type: 'complete_assessment',
+                            data: reportData
+                        })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Report successfully submitted:', data);
+                        showTemporaryMessage("Report data sent successfully!", "success");
+                    })
+                    .catch(error => {
+                        console.error('Error submitting report:', error);
+                        showTemporaryMessage("Error sending report. Please try again.", "error");
+                    });
+                }
+
+                // Drawing parameters
+                const svgParams = { centerX: 400, centerY: 400, radius: 350, innerRadius: 75, domainCount: domains.length, angleStep: (2 * Math.PI) / domains.length };
+
+                // Initialize the wheel
+                try { drawWheel(); } catch (error) { console.error("Error drawing wheel:", error); showTemporaryMessage("Error drawing wheel!", "error"); }
+
+                // Function to draw the wheel
+                function drawWheel() {
+                     let initSvgContent = `<defs><radialGradient id="bgGradientCenter" cx="50%" cy="50%" r="50%" fx="50%" fy="50%"><stop offset="0%" stop-color="var(--bg-color-light)" stop-opacity="0.5" /><stop offset="100%" stop-color="var(--bg-color-medium)" stop-opacity="0.8" /></radialGradient></defs>`;
+                     initSvgContent += `<circle cx="${svgParams.centerX}" cy="${svgParams.centerY}" r="${svgParams.radius + 40}" fill="var(--bg-color-medium)" opacity="0.3" />`;
+                     initSvgContent += `<circle cx="${svgParams.centerX}" cy="${svgParams.centerY}" r="${svgParams.radius + 15}" fill="var(--bg-color-medium)" />`;
+                     let rotatingSvgContent = '';
+                     for (let i = 0; i < domains.length; i++) {
+                         const startAngle = i * svgParams.angleStep - Math.PI / 2; const endAngle = startAngle + svgParams.angleStep;
+                         const path = createSectorPath(svgParams.centerX, svgParams.centerY, svgParams.radius, svgParams.innerRadius, startAngle, endAngle);
+                         if (!path) continue;
+                         const textAngle = startAngle + svgParams.angleStep / 2; const textRadius = svgParams.radius - 55;
+                         const textX = svgParams.centerX + textRadius * Math.cos(textAngle); const textY = svgParams.centerY + textRadius * Math.sin(textAngle);
+                         const markerRadius = svgParams.radius - 25; const markerX = svgParams.centerX + markerRadius * Math.cos(textAngle); const markerY = svgParams.centerY + markerRadius * Math.sin(textAngle);
+                         rotatingSvgContent += `<path class="domain-section" id="domain-${domains[i].id}" data-id="${domains[i].id}" d="${path}" fill="${domains[i].color}" stroke="var(--bg-color-dark)" stroke-width="4" opacity="0.9"></path><text class="domain-label" x="${textX}" y="${textY}" transform="rotate(${textAngle * 180 / Math.PI + 90} ${textX} ${textY})" text-anchor="middle" dominant-baseline="central" style="text-shadow: 0 0 4px rgba(0,0,0,0.9);"> ${domains[i].name.toUpperCase()} </text><g class="completion-marker" id="marker-${domains[i].id}" style="display: none; pointer-events: none;"><circle cx="${markerX}" cy="${markerY}" r="10" fill="rgba(255, 255, 255, 0.8)" /><path d="M ${markerX - 4} ${markerY+1} L ${markerX - 1.5} ${markerY + 4} L ${markerX + 4} ${markerY - 2}" stroke="#059669" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" /></g>`;
+                     }
+                     rotatingSvgContent += `<circle class="center-circle" cx="${svgParams.centerX}" cy="${svgParams.centerY}" r="${svgParams.innerRadius}" fill="url(#bgGradientCenter)" stroke="var(--border-color)" stroke-width="3"></circle><text class="center-text" x="${svgParams.centerX}" y="${svgParams.centerY}" text-anchor="middle" dominant-baseline="central" fill="var(--text-color-primary)" font-size="28" font-weight="600">LIFE</text>`;
+                     const finalSvgContent = initSvgContent + `<g id="wheel-rotating-group">` + rotatingSvgContent + `</g>`;
+
+                     if (wheelSvg) { wheelSvg.innerHTML = finalSvgContent; attachDomainEvents(); updateCompletionMarkers(); }
+                     else { console.error("Wheel SVG container (#wheel-svg) not found!"); }
+                }
+
+                 // Function createSectorPath
+                 function createSectorPath(cx, cy, outerRadius, innerRadius, startAngle, endAngle) {
+                    const iS = { x: cx + innerRadius * Math.cos(startAngle), y: cy + innerRadius * Math.sin(startAngle) }; const iE = { x: cx + innerRadius * Math.cos(endAngle), y: cy + innerRadius * Math.sin(endAngle) };
+                    const oS = { x: cx + outerRadius * Math.cos(startAngle), y: cy + outerRadius * Math.sin(startAngle) }; const oE = { x: cx + outerRadius * Math.cos(endAngle), y: cy + outerRadius * Math.sin(endAngle) };
+                    const largeArcFlag = endAngle - startAngle <= Math.PI ? "0" : "1";
+                    const coords = [iS.x, iS.y, oS.x, oS.y, oE.x, oE.y, iE.x, iE.y];
+                    if (coords.some(isNaN)) { console.error("NaN coordinate in createSectorPath", {cx, cy, outerRadius, innerRadius, startAngle, endAngle}); return ""; }
+                    return `M ${iS.x} ${iS.y} L ${oS.x} ${oS.y} A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${oE.x} ${oE.y} L ${iE.x} ${iE.y} A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${iS.x} ${iS.y} Z`;
+                 }
+
+                 // Attach domain event listeners
+                 function attachDomainEvents() {
+                      if (!wheelSvg) return; const rotatingGroup = wheelSvg.querySelector('#wheel-rotating-group'); if (!rotatingGroup) { console.error("Cannot attach events: Rotating group not found."); return; }
+                      rotatingGroup.querySelectorAll('.domain-section').forEach(section => { section.addEventListener('click', handleDomainClick); });
+                 }
+                 // Define click handler
+                 function handleDomainClick(event) {
+                      if (this.classList.contains('completed')) { showTemporaryMessage("Domain already completed.", "info"); return; }
+                      const domainId = parseInt(this.getAttribute('data-id'));
+                      if (!isNaN(domainId)) { selectDomain(domainId); } else { console.error("Invalid domain ID clicked:", this.getAttribute('data-id')); }
+                  }
+
+                 // Select a domain (Populates panel)
+                 function selectDomain(domainId) {
+                     if (!wheelSvg) return; const rotatingGroup = wheelSvg.querySelector('#wheel-rotating-group'); if (!rotatingGroup) return;
+                     rotatingGroup.querySelectorAll('.domain-section').forEach(section => section.classList.remove('selected'));
+                     const domain = domains.find(d => d.id === domainId); if (!domain) { console.error(`Domain data not found for ID: ${domainId}`); return; }
+                     const selectedSection = rotatingGroup.querySelector(`#domain-${domainId}`); if (selectedSection) selectedSection.classList.add('selected');
+                     userState.selectedDomain = domain;
+                     populateDomainPanel(domain); // Populate
+                     if(domainPanel) domainPanel.classList.add('active'); if(helpMessage) helpMessage.style.display = 'none';
+                     if(domainPanel) domainPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                 }
+
+                 // Function to populate panel content (Includes Tags)
+                 function populateDomainPanel(domain) {
+                     const panelTitle = domainPanel.querySelector('#domain-title'); const panelDescription = domainPanel.querySelector('#domain-description');
+                     const panelQuestionText = domainPanel.querySelector('#direct-question-text'); const panelFeelingTagsContainer = domainPanel.querySelector('#feeling-tags-container');
+                     const panelRatingSlider = domainPanel.querySelector('#rating-slider'); const panelSliderValue = domainPanel.querySelector('#slider-value');
+                     const panelDesiredKeywordInput = domainPanel.querySelector('#desired-keyword-input'); const panelNextStepInput = domainPanel.querySelector('#next-step-input');
+                     if (!panelTitle || !panelDescription || !panelQuestionText || !panelFeelingTagsContainer || !panelRatingSlider || !panelSliderValue || !panelDesiredKeywordInput || !panelNextStepInput) { console.error("Panel elements missing during population!"); return; }
+
+                     panelTitle.textContent = domain.name; panelTitle.style.color = domain.color; panelDescription.textContent = domain.description;
+                     panelQuestionText.textContent = domain.directQuestion || "How do you feel about this domain?";
+                     document.documentElement.style.setProperty('--domain-color', domain.color); document.documentElement.style.setProperty('--domain-color-rgb', domain.colorRgb || '129, 140, 248');
+                     
+                     // Reset step navigation to first step
+                     showStep(1);
+
+                     // Populate Feeling Tags
+                     panelFeelingTagsContainer.innerHTML = '';
+                     const savedData = userState.domainRatings[domain.id]; const previouslySelectedFeelings = savedData?.selectedFeelings || [];
+                     feelingTags.forEach(tag => {
+                         const tagElement = document.createElement('button'); tagElement.classList.add('feeling-tag'); tagElement.textContent = tag; tagElement.dataset.tag = tag;
+                         if (previouslySelectedFeelings.includes(tag)) { tagElement.classList.add('selected'); }
+                         panelFeelingTagsContainer.appendChild(tagElement); // Click handled by delegation
+                     });
+
+                     // Load other saved data
+                     panelRatingSlider.value = savedData?.rating || 5; panelSliderValue.textContent = panelRatingSlider.value;
+                     panelDesiredKeywordInput.value = savedData?.desiredKeyword || ''; panelNextStepInput.value = savedData?.blocker || '';
+                 }
+
+                 // Close domain panel
+                 function closeDomainPanel() {
+                      userState.selectedDomain = null; if (domainPanel) domainPanel.classList.remove('active'); if (helpMessage) helpMessage.style.display = 'block';
+                      if (wheelSvg) { const rotatingGroup = wheelSvg.querySelector('#wheel-rotating-group'); if (rotatingGroup) rotatingGroup.querySelectorAll('.domain-section').forEach(section => section.classList.remove('selected')); }
+                      document.documentElement.style.removeProperty('--domain-color'); document.documentElement.style.removeProperty('--domain-color-rgb');
+                      // Reset to first step when closing
+                      showStep(1);
+                 }
+                 
+                 // Handle step navigation
+                 function showStep(stepNumber) {
+                    if (!domainPanel) return;
+                    
+                    // Hide all steps and update indicators
+                    const allSteps = domainPanel.querySelectorAll('.step-container');
+                    const allIndicators = domainPanel.querySelectorAll('.step-indicator');
+                    
+                    allSteps.forEach(step => step.classList.remove('active'));
+                    allIndicators.forEach(indicator => indicator.classList.remove('active'));
+                    
+                    // Show the requested step
+                    const targetStep = domainPanel.querySelector(`#step-${stepNumber}`);
+                    const targetIndicator = domainPanel.querySelector(`.step-indicator[data-step="${stepNumber}"]`);
+                    
+                    if (targetStep) targetStep.classList.add('active');
+                    if (targetIndicator) targetIndicator.classList.add('active');
+                    
+                    // Update progress bar
+                    const progressBar = domainPanel.querySelector('#progress-bar');
+                    if (progressBar) {
+                        const progressPercentage = ((stepNumber - 1) / (allSteps.length - 1)) * 100;
+                        progressBar.style.width = `${progressPercentage}%`;
+                    }
+                 }
+                 
+                 // Validate current step and proceed to next if valid
+                 function validateAndProceed() {
+                    if (!userState.selectedDomain || !domainPanel) return;
+                    
+                    // Get active step
+                    const activeStep = domainPanel.querySelector('.step-container.active');
+                    if (!activeStep) return;
+                    
+                    const stepNumber = parseInt(activeStep.id.split('-')[1]);
+                    
+                    // Step-specific validation
+                    if (stepNumber === 1) {
+                        const selectedFeelingElements = activeStep.querySelectorAll('.feeling-tag.selected');
+                        if (selectedFeelingElements.length === 0) {
+                            showTemporaryMessage("Please select at least one feeling/reaction.", "error");
+                            return false;
+                        }
+                        
+                        // Proceed to next step
+                        showStep(2);
+                        return true;
+                    }
+                    
+                    return true;
+                 }
+                 
+                 // Handle going back to previous step
+                 function goToPreviousStep() {
+                    if (!domainPanel) return;
+                    
+                    // Get active step
+                    const activeStep = domainPanel.querySelector('.step-container.active');
+                    if (!activeStep) return;
+                    
+                    const stepNumber = parseInt(activeStep.id.split('-')[1]);
+                    if (stepNumber > 1) {
+                        showStep(stepNumber - 1);
+                    }
+                 }
+
+                  // Submit domain rating (Includes Tags)
+                  function submitDomainRating() {
+                      if (!userState.selectedDomain || !domainPanel) return; const domainId = userState.selectedDomain.id;
+                      const currentRatingSlider = domainPanel.querySelector('#rating-slider'); const currentFeelingTagsContainer = domainPanel.querySelector('#feeling-tags-container');
+                      const currentDesiredKeywordInput = domainPanel.querySelector('#desired-keyword-input'); const currentNextStepInput = domainPanel.querySelector('#next-step-input');
+                      if (!currentRatingSlider || !currentFeelingTagsContainer || !currentDesiredKeywordInput || !currentNextStepInput) { console.error("Inputs missing during submit!"); return; }
+
+                      const rating = parseInt(currentRatingSlider.value);
+                      const selectedFeelingElements = currentFeelingTagsContainer.querySelectorAll('.feeling-tag.selected'); const selectedFeelings = Array.from(selectedFeelingElements).map(el => el.dataset.tag);
+                      const desiredKeyword = currentDesiredKeywordInput.value.trim(); const nextStep = currentNextStepInput.value.trim();
+
+                      // Validate final step
+                      if (!desiredKeyword) { showTemporaryMessage("Please describe what a positive breakthrough would look like.", "error"); currentDesiredKeywordInput.focus(); return; }
+
+                      const timestamp = new Date().toISOString();
+                      userState.domainRatings[domainId] = { rating, selectedFeelings, desiredKeyword, blocker: nextStep, timestamp };
+                      
+                      // Prepare the single domain assessment data
+                      const domain = userState.selectedDomain;
+                      const singleDomainData = {
+                          userId: userState.userId,
+                          gender: userState.gender,
+                          assessmentDate: timestamp,
+                          domainId: domainId,
+                          domainName: domain.name,
+                          directQuestion: domain.directQuestion,
+                          rating: rating,
+                          selectedFeelings: selectedFeelings,
+                          desiredKeyword: desiredKeyword,
+                          blocker: nextStep
+                      };
+                      
+                      // Submit single domain assessment to Supabase
+                      submitSingleDomainToSupabase(singleDomainData);
+                      
+                      console.log(`Submitted for Domain ${domainId}:`, userState.domainRatings[domainId]);
+                      if (!userState.completedDomains.includes(domainId)) { userState.completedDomains.push(domainId); }
+                      updateCompletionMarkers(); closeDomainPanel(); checkReportAvailability(); showTemporaryMessage("Reflection Saved!", "success");
+                 }
+                 
+                 // Function to submit a single domain assessment to Supabase
+                 function submitSingleDomainToSupabase(domainData) {
+                     // N8n webhook URL - replace with your actual n8n webhook URL
+                     const webhookUrl = 'https://fluxxx.app.n8n.cloud/webhook/5b322439-d37f-4ae1-88e6-878e3af43fbe';
+                     
+                     // Format data to match database schema
+                     const formattedData = {
+                         type: 'domain_assessment',
+                         data: {
+                             user_id: domainData.userId,
+                             domain_id: domainData.domainId,
+                             domain_name: domainData.domainName,
+                             direct_question: domainData.directQuestion,
+                             rating: domainData.rating,
+                             selected_feelings: domainData.selectedFeelings,
+                             desired_keyword: domainData.desiredKeyword,
+                             blocker: domainData.blocker,
+                             assessment_date: domainData.assessmentDate,
+                             gender: domainData.gender
+                         }
+                     };
+                     
+                     fetch(webhookUrl, {
+                         method: 'POST',
+                         headers: {
+                             'Content-Type': 'application/json',
+                         },
+                         body: JSON.stringify(formattedData)
+                     })
+                     .then(response => {
+                         if (!response.ok) {
+                             throw new Error('Network response was not ok');
+                         }
+                         return response.json();
+                     })
+                     .then(data => {
+                         console.log('Domain assessment successfully submitted to Supabase:', data);
+                     })
+                     .catch(error => {
+                         console.error('Error submitting domain assessment:', error);
+                         // Still continue with UI flow, log error only for debugging
+                     });
+                 }
+
+                  // Update completion markers
+                  function updateCompletionMarkers() {
+                      if (!wheelSvg) return; const rotatingGroup = wheelSvg.querySelector('#wheel-rotating-group'); if (!rotatingGroup) return;
+                      if (completionCount) completionCount.textContent = userState.completedDomains.length;
+                      domains.forEach(domain => {
+                          const marker = rotatingGroup.querySelector(`#marker-${domain.id}`); const section = rotatingGroup.querySelector(`#domain-${domain.id}`);
+                          const isCompleted = userState.completedDomains.includes(domain.id);
+                          if (marker) marker.style.display = isCompleted ? 'block' : 'none'; if (section) section.classList.toggle('completed', isCompleted);
+                      });
+                 }
+
+                  // Check report availability
+                  function checkReportAvailability() { if(reportButton) reportButton.classList.toggle('active', userState.completedDomains.length >= 3); }
+
+                  // Generate report (Includes Tags)
+                  function generateReport() {
+                     console.log("generateReport called", userState.completedDomains.length);
+                     if (userState.completedDomains.length < 3) { 
+                        showTemporaryMessage("Complete at least 3 domains first.", "error"); 
+                        return; 
+                     }
+                     
+                     console.log("Showing email modal");
+                     // Show email modal to collect email
+                     showEmailModal();
+                  }
+
+                  // Helper: Show temporary message
+                  function showTemporaryMessage(message, type = "info") {
+                     if (!debugInfo) return; clearTimeout(messageTimeout); debugInfo.textContent = message; debugInfo.style.display = 'block'; debugInfo.classList.remove('fade-out');
+                     debugInfo.style.backgroundColor = type === "success" ? "#10B981" : (type === "error" ? "#EF4444" : "var(--accent-color-primary)");
+                     messageTimeout = setTimeout(() => { debugInfo.classList.add('fade-out'); setTimeout(() => { if (debugInfo.classList.contains('fade-out')) { debugInfo.style.display = 'none'; debugInfo.classList.remove('fade-out'); } }, 500); }, 2500);
+                  }
+
+                 // --- Attach Event Listeners for Panel (using Event Delegation) ---
+                 if(domainPanel) {
+                     domainPanel.addEventListener('click', function(event) {
+                         if (event.target && event.target.matches('#cancel-button')) { closeDomainPanel(); }
+                         if (event.target && event.target.matches('#next-step-button')) { validateAndProceed(); }
+                         if (event.target && event.target.matches('#back-button')) { goToPreviousStep(); }
+                         if (event.target && event.target.matches('#submit-button')) { submitDomainRating(); }
+                         if (event.target && event.target.matches('.feeling-tag')) { event.target.classList.toggle('selected'); } // Toggle tag selection visually
+                     });
+                     domainPanel.addEventListener('input', function(event) {
+                         if (event.target && event.target.matches('#rating-slider')) {
+                              const panelSliderValue = domainPanel.querySelector('#slider-value');
+                              if(panelSliderValue) panelSliderValue.textContent = event.target.value;
+                         }
+                     });
+                 } else { console.error("Cannot attach panel listeners: Domain panel not found."); }
+
+                // Initial setup calls
+                loadSavedGender();
+                checkReportAvailability();
+                // console.log("Initial setup complete."); // Debug log removed
+
+            }); // End DOMContentLoaded
+        } catch (error) {
+            console.error("A critical error occurred:", error);
+            if (document.body) { document.body.innerHTML = `<p style="color: red; font-size: 20px; padding: 20px;">Error: Application failed to load. ${error.message}</p>`; }
+        }
+    </script>
+</body>
+</html>
