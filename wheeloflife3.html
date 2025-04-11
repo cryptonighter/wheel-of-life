@@ -222,17 +222,17 @@
              <div class="step-indicators">
                 <div class="step-indicator active" data-step="1"></div>
                 <div class="step-indicator" data-step="2"></div>
+                <div class="step-indicator" data-step="3"></div>
+                <div class="step-indicator" data-step="4"></div>
              </div>
 
              <div id="step-1" class="step-container active">
-                <div class="direct-question-section"><p id="direct-question-text"></p></div>
-                <div class="feeling-section">
-                    <h3 class="section-title">Immediate Reaction</h3>
-                    <label>Based on the question above, what's your immediate reaction or feeling? Select any that apply.</label>
-                    <div id="feeling-tags-container"></div>
+                <div class="direct-question-section">
+                    <p id="direct-question-text"></p>
                 </div>
                 <div class="rating-section">
                     <h3 class="section-title">Your Assessment</h3>
+                    <p id="direct-statement-text" style="margin-bottom: 20px; font-weight: 500; font-style: italic; color: var(--text-color-secondary);"></p>
                     <div class="rating-images">
                        <div class="image-container"> <div class="image-box"><svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="var(--text-color-muted)" stroke-width="1.5"/><path d="M8 16C8 16 9.5 14 12 14C14.5 14 16 16 16 16" stroke="var(--text-color-muted)" stroke-width="1.5"/><path d="M9 9H9.01" stroke="var(--text-color-muted)" stroke-width="2.5"/><path d="M15 9H15.01" stroke="var(--text-color-muted)" stroke-width="2.5"/></svg></div> <div class="image-label">Low (1)</div> </div>
                        <div class="image-container"> <div class="image-box"><svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="var(--text-color-secondary)" stroke-width="1.5"/><path d="M8 14C8 14 9.5 17 12 17C14.5 17 16 14 16 14" stroke="var(--text-color-secondary)" stroke-width="1.5"/><path d="M9 9H9.01" stroke="var(--text-color-secondary)" stroke-width="2.5"/><path d="M15 9H15.01" stroke="var(--text-color-secondary)" stroke-width="2.5"/></svg></div> <div class="image-label">High (10)</div> </div>
@@ -251,11 +251,33 @@
              </div>
 
              <div id="step-2" class="step-container">
+                <div class="direct-question-section">
+                    <p class="reference-question" style="font-size: 14px; color: var(--text-color-muted); margin-bottom: 15px;">Reference question: <span id="reference-question-text"></span></p>
+                </div>
+                <div class="feeling-section">
+                    <h3 class="section-title">Immediate Reaction</h3>
+                    <label>Based on the question above, what's your immediate reaction or feeling? Select any that apply.</label>
+                    <div id="feeling-tags-container"></div>
+                </div>
+                <div class="action-buttons">
+                    <button id="back-button" class="btn btn-cancel">Back</button>
+                    <button id="next-step-button" class="btn btn-submit">Continue</button>
+                </div>
+             </div>
+
+             <div id="step-3" class="step-container">
                 <div class="desired-state-section">
                     <h3 class="section-title">Positive Breakthrough</h3>
                     <label for="desired-keyword-input">What would a positive breakthrough in this domain look like?</label>
                     <input type="text" id="desired-keyword-input" class="short-input" placeholder="e.g., Finding deeper connections, Financial freedom, Peak health...">
                 </div>
+                <div class="action-buttons">
+                    <button id="back-button" class="btn btn-cancel">Back</button>
+                    <button id="next-step-button" class="btn btn-submit">Continue</button>
+                </div>
+             </div>
+
+             <div id="step-4" class="step-container">
                 <div class="next-step-section">
                     <h3 class="section-title">Current Challenges</h3>
                     <label for="next-step-input">What's holding me back from experiencing the breakthrough?</label>
@@ -318,18 +340,18 @@
 
                 // Domains data
                  const domains = [
-                     { id: 1, name: "Sexual Power", color: "#FF9AA2", colorRgb: "255, 154, 162", description: "Relationship with sexual energy, desire, expression.", directQuestion: "How authentically can you express your desires and boundaries in intimacy?" },
-                     { id: 2, name: "Altruism", color: "#FFB7B2", colorRgb: "255, 183, 178", description: "Selfless concern for others, kindness, contribution.", directQuestion: "Does giving to others currently leave you feeling more energized or depleted?" },
-                     { id: 3, name: "Work Ethics", color: "#FFDAC1", colorRgb: "255, 218, 193", description: "Principles, values, discipline in work.", directQuestion: "How often does your daily work align with what you find personally meaningful?" },
-                     { id: 4, name: "Friends", color: "#E2F0CB", colorRgb: "226, 240, 203", description: "Quality and depth of non-familial social bonds.", directQuestion: "When facing difficulties, how confident are you that your friends offer genuine support?" },
-                     { id: 5, name: "Faith", color: "#B5EAD7", colorRgb: "181, 234, 215", description: "Relationship with something greater; meaning, transcendence.", directQuestion: "Does your faith/spirituality currently serve as a reliable source of inner strength or peace?" },
-                     { id: 6, name: "Me", color: "#C7CEEA", colorRgb: "199, 206, 234", description: "Relationship with self: awareness, acceptance, care.", directQuestion: "How consistently are you prioritizing activities solely dedicated to your own rest and rejuvenation?" },
-                     { id: 7, name: "Money", color: "#D4A5A5", colorRgb: "212, 165, 165", description: "Relationship with finances: mindset, literacy, values.", directQuestion: "To what extent do you feel your financial situation empowers you versus restricts you?" },
-                     { id: 8, name: "Growth", color: "#9ADBC5", colorRgb: "154, 219, 197", description: "Ongoing development: intellectual, emotional, spiritual.", directQuestion: "Are you actively engaging in learning or experiences that genuinely excite and challenge you?" },
-                     { id: 9, name: "Family", color: "#A2D2FF", colorRgb: "162, 210, 255", description: "Relationship with family; dynamics, belonging.", directQuestion: "How often do interactions with your family leave you feeling respected and understood?" },
-                     { id: 10, name: "Hobby", color: "#FDFFB6", colorRgb: "253, 255, 182", description: "Activities for pleasure, fulfillment, play.", directQuestion: "How frequently do you make guilt-free time for hobbies that bring you pure enjoyment?" },
-                     { id: 11, name: "Health", color: "#BDB2FF", colorRgb: "189, 178, 255", description: "Physical and mental wellbeing; self-care.", directQuestion: "Are your current health habits providing the physical and mental energy you desire?" },
-                     { id: 12, name: "Intimacy", color: "#FFC6FF", colorRgb: "255, 198, 255", description: "Deep connection, vulnerability, trust.", directQuestion: "How safe do you feel expressing your complete, vulnerable self in your closest relationship(s)?" }
+                     { id: 1, name: "Sexual Power", color: "#FF9AA2", colorRgb: "255, 154, 162", description: "Relationship with sexual energy, desire, expression.", directQuestion: "How authentically can you express your desires and boundaries in intimacy?", directStatement: "I can authentically express my desires and boundaries in intimacy." },
+                     { id: 2, name: "Altruism", color: "#FFB7B2", colorRgb: "255, 183, 178", description: "Selfless concern for others, kindness, contribution.", directQuestion: "Does giving to others currently leave you feeling more energized or depleted?", directStatement: "Giving to others currently leaves me feeling energized rather than depleted." },
+                     { id: 3, name: "Work Ethics", color: "#FFDAC1", colorRgb: "255, 218, 193", description: "Principles, values, discipline in work.", directQuestion: "How often does your daily work align with what you find personally meaningful?", directStatement: "My daily work aligns with what I find personally meaningful." },
+                     { id: 4, name: "Friends", color: "#E2F0CB", colorRgb: "226, 240, 203", description: "Quality and depth of non-familial social bonds.", directQuestion: "When facing difficulties, how confident are you that your friends offer genuine support?", directStatement: "I feel confident that my friends offer genuine support when facing difficulties." },
+                     { id: 5, name: "Faith", color: "#B5EAD7", colorRgb: "181, 234, 215", description: "Relationship with something greater; meaning, transcendence.", directQuestion: "Does your faith/spirituality currently serve as a reliable source of inner strength or peace?", directStatement: "My faith/spirituality currently serves as a reliable source of inner strength and peace." },
+                     { id: 6, name: "Me", color: "#C7CEEA", colorRgb: "199, 206, 234", description: "Relationship with self: awareness, acceptance, care.", directQuestion: "How consistently are you prioritizing activities solely dedicated to your own rest and rejuvenation?", directStatement: "I consistently prioritize activities solely dedicated to my own rest and rejuvenation." },
+                     { id: 7, name: "Money", color: "#D4A5A5", colorRgb: "212, 165, 165", description: "Relationship with finances: mindset, literacy, values.", directQuestion: "To what extent do you feel your financial situation empowers you versus restricts you?", directStatement: "My financial situation empowers me rather than restricts me." },
+                     { id: 8, name: "Growth", color: "#9ADBC5", colorRgb: "154, 219, 197", description: "Ongoing development: intellectual, emotional, spiritual.", directQuestion: "Are you actively engaging in learning or experiences that genuinely excite and challenge you?", directStatement: "I actively engage in learning experiences that genuinely excite and challenge me." },
+                     { id: 9, name: "Family", color: "#A2D2FF", colorRgb: "162, 210, 255", description: "Relationship with family; dynamics, belonging.", directQuestion: "How often do interactions with your family leave you feeling respected and understood?", directStatement: "Interactions with my family leave me feeling respected and understood." },
+                     { id: 10, name: "Hobby", color: "#FDFFB6", colorRgb: "253, 255, 182", description: "Activities for pleasure, fulfillment, play.", directQuestion: "How frequently do you make guilt-free time for hobbies that bring you pure enjoyment?", directStatement: "I make guilt-free time for hobbies that bring me pure enjoyment." },
+                     { id: 11, name: "Health", color: "#BDB2FF", colorRgb: "189, 178, 255", description: "Physical and mental wellbeing; self-care.", directQuestion: "Are your current health habits providing the physical and mental energy you desire?", directStatement: "My current health habits provide the physical and mental energy I desire." },
+                     { id: 12, name: "Intimacy", color: "#FFC6FF", colorRgb: "255, 198, 255", description: "Deep connection, vulnerability, trust.", directQuestion: "How safe do you feel expressing your complete, vulnerable self in your closest relationship(s)?", directStatement: "I feel safe expressing my complete, vulnerable self in my closest relationship(s)." }
                  ];
                 // Added back: Feeling Tags
                 const feelingTags = [ "Energized", "Inspired", "Content", "Connected", "Confident", "Hopeful", "Grateful", "Secure", "Balanced", "Flow", "Calm", "Joyful", "Drained", "Stressed", "Frustrated", "Isolated", "Anxious", "Stuck", "Resentful", "Confused", "Overwhelmed", "Numb", "Sad", "Angry" ];
@@ -661,31 +683,55 @@
 
                  // Function to populate panel content (Includes Tags)
                  function populateDomainPanel(domain) {
-                     const panelTitle = domainPanel.querySelector('#domain-title'); const panelDescription = domainPanel.querySelector('#domain-description');
-                     const panelQuestionText = domainPanel.querySelector('#direct-question-text'); const panelFeelingTagsContainer = domainPanel.querySelector('#feeling-tags-container');
-                     const panelRatingSlider = domainPanel.querySelector('#rating-slider'); const panelSliderValue = domainPanel.querySelector('#slider-value');
-                     const panelDesiredKeywordInput = domainPanel.querySelector('#desired-keyword-input'); const panelNextStepInput = domainPanel.querySelector('#next-step-input');
-                     if (!panelTitle || !panelDescription || !panelQuestionText || !panelFeelingTagsContainer || !panelRatingSlider || !panelSliderValue || !panelDesiredKeywordInput || !panelNextStepInput) { console.error("Panel elements missing during population!"); return; }
+                     const panelTitle = domainPanel.querySelector('#domain-title'); 
+                     const panelDescription = domainPanel.querySelector('#domain-description');
+                     const panelQuestionText = domainPanel.querySelector('#direct-question-text'); 
+                     const panelStatementText = domainPanel.querySelector('#direct-statement-text');
+                     const panelFeelingTagsContainer = domainPanel.querySelector('#feeling-tags-container');
+                     const panelRatingSlider = domainPanel.querySelector('#rating-slider'); 
+                     const panelSliderValue = domainPanel.querySelector('#slider-value');
+                     const panelDesiredKeywordInput = domainPanel.querySelector('#desired-keyword-input'); 
+                     const panelNextStepInput = domainPanel.querySelector('#next-step-input');
+                     
+                     if (!panelTitle || !panelDescription || !panelQuestionText || !panelStatementText || !panelFeelingTagsContainer || 
+                         !panelRatingSlider || !panelSliderValue || !panelDesiredKeywordInput || !panelNextStepInput) { 
+                         console.error("Panel elements missing during population!"); 
+                         return; 
+                     }
 
-                     panelTitle.textContent = domain.name; panelTitle.style.color = domain.color; panelDescription.textContent = domain.description;
+                     panelTitle.textContent = domain.name; 
+                     panelTitle.style.color = domain.color; 
+                     panelDescription.textContent = domain.description;
                      panelQuestionText.textContent = domain.directQuestion || "How do you feel about this domain?";
-                     document.documentElement.style.setProperty('--domain-color', domain.color); document.documentElement.style.setProperty('--domain-color-rgb', domain.colorRgb || '129, 140, 248');
+                     panelStatementText.textContent = domain.directStatement || "I feel good about this domain.";
+                     document.documentElement.style.setProperty('--domain-color', domain.color); 
+                     document.documentElement.style.setProperty('--domain-color-rgb', domain.colorRgb || '129, 140, 248');
                      
                      // Reset step navigation to first step
                      showStep(1);
 
+                     // Load saved data if available
+                     const savedData = userState.domainRatings[domain.id];
+                     
                      // Populate Feeling Tags
                      panelFeelingTagsContainer.innerHTML = '';
-                     const savedData = userState.domainRatings[domain.id]; const previouslySelectedFeelings = savedData?.selectedFeelings || [];
+                     const previouslySelectedFeelings = savedData?.selectedFeelings || [];
                      feelingTags.forEach(tag => {
-                         const tagElement = document.createElement('button'); tagElement.classList.add('feeling-tag'); tagElement.textContent = tag; tagElement.dataset.tag = tag;
-                         if (previouslySelectedFeelings.includes(tag)) { tagElement.classList.add('selected'); }
+                         const tagElement = document.createElement('button'); 
+                         tagElement.classList.add('feeling-tag'); 
+                         tagElement.textContent = tag; 
+                         tagElement.dataset.tag = tag;
+                         if (previouslySelectedFeelings.includes(tag)) { 
+                             tagElement.classList.add('selected'); 
+                         }
                          panelFeelingTagsContainer.appendChild(tagElement); // Click handled by delegation
                      });
 
                      // Load other saved data
-                     panelRatingSlider.value = savedData?.rating || 5; panelSliderValue.textContent = panelRatingSlider.value;
-                     panelDesiredKeywordInput.value = savedData?.desiredKeyword || ''; panelNextStepInput.value = savedData?.blocker || '';
+                     panelRatingSlider.value = savedData?.rating || 5; 
+                     panelSliderValue.textContent = panelRatingSlider.value;
+                     panelDesiredKeywordInput.value = savedData?.desiredKeyword || ''; 
+                     panelNextStepInput.value = savedData?.blocker || '';
                  }
 
                  // Close domain panel
@@ -721,6 +767,14 @@
                         const progressPercentage = ((stepNumber - 1) / (allSteps.length - 1)) * 100;
                         progressBar.style.width = `${progressPercentage}%`;
                     }
+                    
+                    // If moving to step 2, copy the question for reference
+                    if (stepNumber === 2 && userState.selectedDomain) {
+                        const referenceQuestionText = domainPanel.querySelector('#reference-question-text');
+                        if (referenceQuestionText) {
+                            referenceQuestionText.textContent = userState.selectedDomain.directQuestion;
+                        }
+                    }
                  }
                  
                  // Validate current step and proceed to next if valid
@@ -735,6 +789,11 @@
                     
                     // Step-specific validation
                     if (stepNumber === 1) {
+                        // Rating validation - No specific validation needed for slider
+                        // Proceed to next step
+                        showStep(2);
+                        return true;
+                    } else if (stepNumber === 2) {
                         const selectedFeelingElements = activeStep.querySelectorAll('.feeling-tag.selected');
                         if (selectedFeelingElements.length === 0) {
                             showTemporaryMessage("Please select at least one feeling/reaction.", "error");
@@ -742,7 +801,21 @@
                         }
                         
                         // Proceed to next step
-                        showStep(2);
+                        showStep(3);
+                        return true;
+                    } else if (stepNumber === 3) {
+                        const desiredKeywordInput = document.getElementById('desired-keyword-input');
+                        if (!desiredKeywordInput || !desiredKeywordInput.value.trim()) {
+                            showTemporaryMessage("Please describe what a positive breakthrough would look like.", "error");
+                            return false;
+                        }
+                        
+                        // Proceed to next step
+                        showStep(4);
+                        return true;
+                    } else if (stepNumber === 4) {
+                        // Last step validation is handled by submitDomainRating
+                        // Don't proceed automatically
                         return true;
                     }
                     
@@ -766,16 +839,28 @@
                   // Submit domain rating (Includes Tags)
                   function submitDomainRating() {
                       if (!userState.selectedDomain || !domainPanel) return; const domainId = userState.selectedDomain.id;
-                      const currentRatingSlider = domainPanel.querySelector('#rating-slider'); const currentFeelingTagsContainer = domainPanel.querySelector('#feeling-tags-container');
-                      const currentDesiredKeywordInput = domainPanel.querySelector('#desired-keyword-input'); const currentNextStepInput = domainPanel.querySelector('#next-step-input');
-                      if (!currentRatingSlider || !currentFeelingTagsContainer || !currentDesiredKeywordInput || !currentNextStepInput) { console.error("Inputs missing during submit!"); return; }
+                      const currentRatingSlider = domainPanel.querySelector('#rating-slider'); 
+                      const currentFeelingTagsContainer = domainPanel.querySelector('#feeling-tags-container');
+                      const currentDesiredKeywordInput = domainPanel.querySelector('#desired-keyword-input'); 
+                      const currentNextStepInput = domainPanel.querySelector('#next-step-input');
+                      
+                      if (!currentRatingSlider || !currentFeelingTagsContainer || !currentDesiredKeywordInput || !currentNextStepInput) { 
+                          console.error("Inputs missing during submit!"); 
+                          return; 
+                      }
 
                       const rating = parseInt(currentRatingSlider.value);
-                      const selectedFeelingElements = currentFeelingTagsContainer.querySelectorAll('.feeling-tag.selected'); const selectedFeelings = Array.from(selectedFeelingElements).map(el => el.dataset.tag);
-                      const desiredKeyword = currentDesiredKeywordInput.value.trim(); const nextStep = currentNextStepInput.value.trim();
+                      const selectedFeelingElements = currentFeelingTagsContainer.querySelectorAll('.feeling-tag.selected'); 
+                      const selectedFeelings = Array.from(selectedFeelingElements).map(el => el.dataset.tag);
+                      const desiredKeyword = currentDesiredKeywordInput.value.trim(); 
+                      const nextStep = currentNextStepInput.value.trim();
 
                       // Validate final step
-                      if (!desiredKeyword) { showTemporaryMessage("Please describe what a positive breakthrough would look like.", "error"); currentDesiredKeywordInput.focus(); return; }
+                      if (!nextStep) { 
+                          showTemporaryMessage("Please describe what's holding you back.", "error"); 
+                          currentNextStepInput.focus(); 
+                          return; 
+                      }
 
                       const timestamp = new Date().toISOString();
                       userState.domainRatings[domainId] = { rating, selectedFeelings, desiredKeyword, blocker: nextStep, timestamp };
@@ -798,116 +883,4 @@
                       // Submit single domain assessment to Supabase
                       submitSingleDomainToSupabase(singleDomainData);
                       
-                      console.log(`Submitted for Domain ${domainId}:`, userState.domainRatings[domainId]);
-                      if (!userState.completedDomains.includes(domainId)) { userState.completedDomains.push(domainId); }
-                      updateCompletionMarkers(); closeDomainPanel(); checkReportAvailability(); showTemporaryMessage("Reflection Saved!", "success");
-                 }
-                 
-                 // Function to submit a single domain assessment to Supabase
-                 function submitSingleDomainToSupabase(domainData) {
-                     // N8n webhook URL - replace with your actual n8n webhook URL
-                     const webhookUrl = 'https://fluxxx.app.n8n.cloud/webhook/5b322439-d37f-4ae1-88e6-878e3af43fbe';
-                     
-                     // Format data to match database schema
-                     const formattedData = {
-                         type: 'domain_assessment',
-                         data: {
-                             user_id: domainData.userId,
-                             domain_id: domainData.domainId,
-                             domain_name: domainData.domainName,
-                             direct_question: domainData.directQuestion,
-                             rating: domainData.rating,
-                             selected_feelings: domainData.selectedFeelings,
-                             desired_keyword: domainData.desiredKeyword,
-                             blocker: domainData.blocker,
-                             assessment_date: domainData.assessmentDate,
-                             gender: domainData.gender
-                         }
-                     };
-                     
-                     fetch(webhookUrl, {
-                         method: 'POST',
-                         headers: {
-                             'Content-Type': 'application/json',
-                         },
-                         body: JSON.stringify(formattedData)
-                     })
-                     .then(response => {
-                         if (!response.ok) {
-                             throw new Error('Network response was not ok');
-                         }
-                         return response.json();
-                     })
-                     .then(data => {
-                         console.log('Domain assessment successfully submitted to Supabase:', data);
-                     })
-                     .catch(error => {
-                         console.error('Error submitting domain assessment:', error);
-                         // Still continue with UI flow, log error only for debugging
-                     });
-                 }
-
-                  // Update completion markers
-                  function updateCompletionMarkers() {
-                      if (!wheelSvg) return; const rotatingGroup = wheelSvg.querySelector('#wheel-rotating-group'); if (!rotatingGroup) return;
-                      if (completionCount) completionCount.textContent = userState.completedDomains.length;
-                      domains.forEach(domain => {
-                          const marker = rotatingGroup.querySelector(`#marker-${domain.id}`); const section = rotatingGroup.querySelector(`#domain-${domain.id}`);
-                          const isCompleted = userState.completedDomains.includes(domain.id);
-                          if (marker) marker.style.display = isCompleted ? 'block' : 'none'; if (section) section.classList.toggle('completed', isCompleted);
-                      });
-                 }
-
-                  // Check report availability
-                  function checkReportAvailability() { if(reportButton) reportButton.classList.toggle('active', userState.completedDomains.length >= 3); }
-
-                  // Generate report (Includes Tags)
-                  function generateReport() {
-                     console.log("generateReport called", userState.completedDomains.length);
-                     if (userState.completedDomains.length < 3) { 
-                        showTemporaryMessage("Complete at least 3 domains first.", "error"); 
-                        return; 
-                     }
-                     
-                     console.log("Showing email modal");
-                     // Show email modal to collect email
-                     showEmailModal();
-                  }
-
-                  // Helper: Show temporary message
-                  function showTemporaryMessage(message, type = "info") {
-                     if (!debugInfo) return; clearTimeout(messageTimeout); debugInfo.textContent = message; debugInfo.style.display = 'block'; debugInfo.classList.remove('fade-out');
-                     debugInfo.style.backgroundColor = type === "success" ? "#10B981" : (type === "error" ? "#EF4444" : "var(--accent-color-primary)");
-                     messageTimeout = setTimeout(() => { debugInfo.classList.add('fade-out'); setTimeout(() => { if (debugInfo.classList.contains('fade-out')) { debugInfo.style.display = 'none'; debugInfo.classList.remove('fade-out'); } }, 500); }, 2500);
-                  }
-
-                 // --- Attach Event Listeners for Panel (using Event Delegation) ---
-                 if(domainPanel) {
-                     domainPanel.addEventListener('click', function(event) {
-                         if (event.target && event.target.matches('#cancel-button')) { closeDomainPanel(); }
-                         if (event.target && event.target.matches('#next-step-button')) { validateAndProceed(); }
-                         if (event.target && event.target.matches('#back-button')) { goToPreviousStep(); }
-                         if (event.target && event.target.matches('#submit-button')) { submitDomainRating(); }
-                         if (event.target && event.target.matches('.feeling-tag')) { event.target.classList.toggle('selected'); } // Toggle tag selection visually
-                     });
-                     domainPanel.addEventListener('input', function(event) {
-                         if (event.target && event.target.matches('#rating-slider')) {
-                              const panelSliderValue = domainPanel.querySelector('#slider-value');
-                              if(panelSliderValue) panelSliderValue.textContent = event.target.value;
-                         }
-                     });
-                 } else { console.error("Cannot attach panel listeners: Domain panel not found."); }
-
-                // Initial setup calls
-                loadSavedGender();
-                checkReportAvailability();
-                // console.log("Initial setup complete."); // Debug log removed
-
-            }); // End DOMContentLoaded
-        } catch (error) {
-            console.error("A critical error occurred:", error);
-            if (document.body) { document.body.innerHTML = `<p style="color: red; font-size: 20px; padding: 20px;">Error: Application failed to load. ${error.message}</p>`; }
-        }
-    </script>
-</body>
-</html>
+                      console.log(`
