@@ -228,11 +228,10 @@
 
              <div id="step-1" class="step-container active">
                 <div class="direct-question-section">
-                    <p id="direct-question-text"></p>
-                </div>
-                <div class="rating-section">
                     <h3 class="section-title">How much do you agree with this statement?</h3>
                     <p id="direct-statement-text" style="margin-bottom: 20px; font-weight: 500; font-style: italic; color: var(--text-color-secondary);"></p>
+                </div>
+                <div class="rating-section">
                     <div class="rating-images">
                        <div class="image-container"> <div class="image-box"><svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="var(--text-color-muted)" stroke-width="1.5"/><path d="M8 16C8 16 9.5 14 12 14C14.5 14 16 16 16 16" stroke="var(--text-color-muted)" stroke-width="1.5"/><path d="M9 9H9.01" stroke="var(--text-color-muted)" stroke-width="2.5"/><path d="M15 9H15.01" stroke="var(--text-color-muted)" stroke-width="2.5"/></svg></div> <div class="image-label">Low (1)</div> </div>
                        <div class="image-container"> <div class="image-box"><svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="var(--text-color-secondary)" stroke-width="1.5"/><path d="M8 14C8 14 9.5 17 12 17C14.5 17 16 14 16 14" stroke="var(--text-color-secondary)" stroke-width="1.5"/><path d="M9 9H9.01" stroke="var(--text-color-secondary)" stroke-width="2.5"/><path d="M15 9H15.01" stroke="var(--text-color-secondary)" stroke-width="2.5"/></svg></div> <div class="image-label">High (10)</div> </div>
@@ -725,7 +724,6 @@
                  function populateDomainPanel(domain) {
                      const panelTitle = domainPanel.querySelector('#domain-title'); 
                      const panelDescription = domainPanel.querySelector('#domain-description');
-                     const panelQuestionText = domainPanel.querySelector('#direct-question-text'); 
                      const panelStatementText = domainPanel.querySelector('#direct-statement-text');
                      const panelFeelingTagsContainer = domainPanel.querySelector('#feeling-tags-container');
                      const panelRatingSlider = domainPanel.querySelector('#rating-slider'); 
@@ -733,7 +731,7 @@
                      const panelDesiredKeywordInput = domainPanel.querySelector('#desired-keyword-input'); 
                      const panelNextStepInput = domainPanel.querySelector('#next-step-input');
                      
-                     if (!panelTitle || !panelDescription || !panelQuestionText || !panelStatementText || !panelFeelingTagsContainer || 
+                     if (!panelTitle || !panelDescription || !panelStatementText || !panelFeelingTagsContainer || 
                          !panelRatingSlider || !panelSliderValue || !panelDesiredKeywordInput || !panelNextStepInput) { 
                          console.error("Panel elements missing during population!"); 
                          return; 
@@ -742,7 +740,6 @@
                      panelTitle.textContent = domain.name; 
                      panelTitle.style.color = domain.color; 
                      panelDescription.textContent = domain.description;
-                     panelQuestionText.textContent = domain.directQuestion || "How do you feel about this domain?";
                      panelStatementText.textContent = domain.directStatement || "I feel good about this domain.";
                      document.documentElement.style.setProperty('--domain-color', domain.color); 
                      document.documentElement.style.setProperty('--domain-color-rgb', domain.colorRgb || '129, 140, 248');
