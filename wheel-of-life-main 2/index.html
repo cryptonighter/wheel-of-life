@@ -548,32 +548,116 @@
                 function showEmailModal() { 
                     console.log("showEmailModal called", emailModal);
                     if(emailModal) {
+                        // Clear any previous errors or messages
+                        const errorElement = emailModal.querySelector('.email-form-error');
+                        if (errorElement) errorElement.style.display = 'none';
+                        
+                        // Clear any previous input values
+                        const emailInput = document.getElementById('report-email');
+                        if (emailInput) emailInput.value = '';
+                        
                         emailModal.classList.add('visible');
                         console.log("Added visible class", emailModal.classList.contains('visible'));
+                        
+                        // Focus on the email field
+                        setTimeout(() => {
+                            const emailInput = document.getElementById('report-email');
+                            if (emailInput) emailInput.focus();
+                        }, 300);
                     }
                 }
-                function hideEmailModal() { if(emailModal) emailModal.classList.remove('visible'); }
-                
+
+                function hideEmailModal() { 
+                    if(emailModal) {
+                        emailModal.classList.remove('visible');
+                        
+                        // Reset any form state
+                        const emailForm = document.getElementById('email-form');
+                        if (emailForm) emailForm.reset();
+                    }
+                }
+
+                // Add email form error handling
+                const addEmailFormError = (message) => {
+                    if (!emailModal) return;
+                    
+                    // Remove any existing error message
+                    let errorElement = emailModal.querySelector('.email-form-error');
+                    if (errorElement) {
+                        errorElement.textContent = message;
+                        errorElement.style.display = 'block';
+                    } else {
+                        // Create new error element if it doesn't exist
+                        errorElement = document.createElement('div');
+                        errorElement.className = 'email-form-error';
+                        errorElement.style.color = '#EF4444';
+                        errorElement.style.marginTop = '10px';
+                        errorElement.style.fontSize = '14px';
+                        errorElement.style.textAlign = 'center';
+                        errorElement.textContent = message;
+                        
+                        // Insert after the email input
+                        const formGroup = emailModal.querySelector('.email-form-group');
+                        if (formGroup) {
+                            formGroup.appendChild(errorElement);
+                        }
+                    }
+                };
+
+                // Email validation function
+                function isValidEmail(email) {
+                    // Basic email validation
+                    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    return regex.test(email);
+                }
+
                 if (emailModalCloseBtn) emailModalCloseBtn.addEventListener('click', hideEmailModal);
                 if (emailModal) emailModal.addEventListener('click', (event) => { if (event.target === emailModal) { hideEmailModal(); } });
-                
+
                 if (emailSkipButton) {
                     emailSkipButton.addEventListener('click', function() {
                         hideEmailModal();
                         submitReportWithoutEmail();
                     });
                 }
-                
+
                 if (emailForm) {
                     emailForm.addEventListener('submit', function(event) {
                         event.preventDefault();
                         const email = document.getElementById('report-email').value.trim();
-                        if (email) {
+                        
+                        // Validate email
+                        if (!email) {
+                            addEmailFormError("Please enter your email address.");
+                            return;
+                        }
+                        
+                        if (!isValidEmail(email)) {
+                            addEmailFormError("Please enter a valid email address.");
+                            return;
+                        }
+                        
+                        // Disable form elements to prevent double submission
+                        const submitButton = emailForm.querySelector('button[type="submit"]');
+                        const skipButton = document.getElementById('email-skip-button');
+                        if (submitButton) {
+                            submitButton.disabled = true;
+                            submitButton.textContent = "Sending...";
+                        }
+                        if (skipButton) skipButton.disabled = true;
+                        
+                        // Add a small delay to show the "Sending..." state
+                        setTimeout(() => {
                             submitReportWithEmail(email);
                             hideEmailModal();
-                        } else {
-                            showTemporaryMessage("Please enter a valid email address.", "error");
-                        }
+                            
+                            // Re-enable buttons after hiding modal
+                            if (submitButton) {
+                                submitButton.disabled = false;
+                                submitButton.textContent = "Send Report";
+                            }
+                            if (skipButton) skipButton.disabled = false;
+                        }, 500);
                     });
                 }
                 
@@ -584,15 +668,23 @@
                     }
                     
                     // Check if email is valid
-                    if (!email || email.trim() === '') {
+                    if (!email || email.trim() === '' || !isValidEmail(email.trim())) {
                         showTemporaryMessage("Please enter a valid email address.", "error");
                         return;
                     }
                     
-                    const reportData = prepareReportData();
-                    reportData.email = email;
-                    
-                    submitReportToWebhook(reportData);
+                    // First test webhook connectivity
+                    testWebhookConnection()
+                        .then(isConnected => {
+                            if (isConnected) {
+                                const reportData = prepareReportData();
+                                reportData.email = email;
+                                
+                                submitReportToWebhook(reportData);
+                            } else {
+                                showTemporaryMessage("Cannot connect to server. Please try again later.", "error");
+                            }
+                        });
                 }
                 
                 function submitReportWithoutEmail() {
@@ -601,60 +693,270 @@
                         return; 
                     }
                     
-                    const reportData = prepareReportData();
-                    submitReportToWebhook(reportData);
+                    // First test webhook connectivity
+                    testWebhookConnection()
+                        .then(isConnected => {
+                            if (isConnected) {
+                                const reportData = prepareReportData();
+                                submitReportToWebhook(reportData);
+                            } else {
+                                showTemporaryMessage("Cannot connect to server. Please try again later.", "error");
+                            }
+                        });
                 }
                 
                 function prepareReportData() {
-                    return { 
-                        userId: userState.userId, 
-                        gender: userState.gender, 
+                    // Create a deep clone to avoid reference issues
+                    const completedDomains = JSON.parse(JSON.stringify(userState.completedDomains));
+                    
+                    // Ensure all required data fields are present and in the correct format
+                    const reportData = { 
+                        userId: userState.userId || `anonymous_${new Date().getTime()}`, 
+                        gender: userState.gender || 'Not specified', 
                         assessmentDate: new Date().toISOString(),
-                        completedReflections: userState.completedDomains.map(id => {
-                            const domain = domains.find(d => d.id === id); 
-                            const ratingData = userState.domainRatings[id] || {};
-                            return { 
-                                domainId: id, 
-                                domainName: domain.name, 
-                                directQuestion: domain.directQuestion, 
-                                rating: ratingData.rating, 
-                                selectedFeelings: ratingData.selectedFeelings || [], 
-                                desiredKeyword: ratingData.desiredKeyword || '', 
-                                blocker: ratingData.blocker || '', 
-                                timestamp: ratingData.timestamp 
-                            };
-                        })
+                        completedReflections: []
                     };
+                    
+                    // Process each completed domain
+                    completedDomains.forEach(id => {
+                        const domain = domains.find(d => d.id === id);
+                        if (!domain) {
+                            console.warn(`Domain with ID ${id} not found. Skipping.`);
+                            return;
+                        }
+                        
+                        const ratingData = userState.domainRatings[id] || {};
+                        
+                        // Ensure all fields are present with defaults
+                        reportData.completedReflections.push({ 
+                            domainId: id, 
+                            domainName: domain.name, 
+                            directQuestion: domain.directQuestion || '', 
+                            rating: ratingData.rating || 5, 
+                            selectedFeelings: Array.isArray(ratingData.selectedFeelings) ? ratingData.selectedFeelings : [], 
+                            desiredKeyword: (ratingData.desiredKeyword || '').trim(), 
+                            blocker: (ratingData.blocker || '').trim(), 
+                            timestamp: ratingData.timestamp || new Date().toISOString()
+                        });
+                    });
+                    
+                    // Sort by completion time if available
+                    reportData.completedReflections.sort((a, b) => {
+                        if (a.timestamp && b.timestamp) {
+                            return new Date(a.timestamp) - new Date(b.timestamp);
+                        }
+                        return 0;
+                    });
+                    
+                    return reportData;
                 }
                 
                 function submitReportToWebhook(reportData) {
-                    const webhookUrl = 'https://fluxxx.app.n8n.cloud/webhook/3dfbd85d-0f09-40db-a6d5-90fcb0f6c221';
+                    // Primary webhook URL
+                    const primaryWebhookUrl = 'https://fluxxx.app.n8n.cloud/webhook/e3df8c17-eded-4a57-a750-b804b31efaac';
+                    // Backup webhook URL (use the same for now, but you can change to a different one if needed)
+                    const backupWebhookUrl = 'https://fluxxx.app.n8n.cloud/webhook/e3df8c17-eded-4a57-a750-b804b31efaac';
+                    
+                    // Start with the primary URL
+                    let webhookUrl = primaryWebhookUrl;
                     
                     showTemporaryMessage("Generating report...", "info");
                     
-                    fetch(webhookUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            type: 'complete_assessment',
-                            data: reportData
-                        })
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
+                    // Validate report data before sending
+                    if (!reportData || !reportData.userId || !reportData.completedReflections || reportData.completedReflections.length < 3) {
+                        console.error('Invalid report data:', reportData);
+                        showTemporaryMessage("Error: Invalid report data. Please try again.", "error");
+                        return;
+                    }
+                    
+                    // Log the data being sent (for debugging)
+                    console.log('Sending report data:', JSON.stringify({
+                        type: 'complete_assessment',
+                        data: reportData
+                    }, null, 2));
+                    
+                    // Create payload once to avoid potential inconsistencies
+                    const payload = {
+                        type: 'complete_assessment',
+                        data: reportData
+                    };
+                    
+                    // Function to attempt the fetch with retry logic
+                    const attemptFetch = (retryCount = 0, useBackup = false) => {
+                        // Use backup URL if specified
+                        if (useBackup) {
+                            webhookUrl = backupWebhookUrl;
+                            console.log('Switching to backup webhook URL');
                         }
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('Report successfully submitted:', data);
-                        showTemporaryMessage("Report data sent successfully!", "success");
-                    })
-                    .catch(error => {
-                        console.error('Error submitting report:', error);
-                        showTemporaryMessage("Error sending report. Please try again.", "error");
+                        
+                        fetch(webhookUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'Cache-Control': 'no-cache'
+                            },
+                            mode: 'cors',
+                            body: JSON.stringify(payload)
+                        })
+                        .then(response => {
+                            // Log the raw response for debugging
+                            console.log('Report submission response status:', response.status);
+                            
+                            if (!response.ok) {
+                                throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Report successfully submitted:', data);
+                            showTemporaryMessage("Report data sent successfully!", "success");
+                        })
+                        .catch(error => {
+                            console.error('Error submitting report:', error);
+                            
+                            // If this is the first attempt with the primary URL, try the backup
+                            if (retryCount === 0 && !useBackup) {
+                                console.log('First attempt failed, trying backup URL...');
+                                attemptFetch(0, true);
+                                return;
+                            }
+                            
+                            // Otherwise use regular retry logic (up to 2 retries per URL)
+                            if (retryCount < 2) {
+                                console.log(`Retrying submission (attempt ${retryCount + 1})...`);
+                                setTimeout(() => attemptFetch(retryCount + 1, useBackup), 1000); // Wait 1 second before retry
+                            } else {
+                                showTemporaryMessage("Error sending report. Please try again.", "error");
+                                
+                                // Log detailed error information for debugging
+                                console.error('Failed after retries. Details:', {
+                                    webhookUrl,
+                                    error: error.toString()
+                                });
+                                
+                                // Show more detailed error message in debug info if available
+                                const debugInfo = document.getElementById('debug-info');
+                                if (debugInfo) {
+                                    // Create a fallback message with manual instructions
+                                    const fallbackMessage = `
+                                        <div style="text-align: left; margin-top: 10px;">
+                                            <p style="margin-bottom: 5px;">If you continue to have issues, you can:</p>
+                                            <ul style="padding-left: 20px; margin-top: 5px;">
+                                                <li>Try again later</li>
+                                                <li>Check your internet connection</li>
+                                                <li>Click "Export Data" below to save your data</li>
+                                            </ul>
+                                            <button id="export-report-data" 
+                                                style="background: #f59e0b; color: #1F2937; border: none; padding: 5px 10px; 
+                                                border-radius: 4px; margin-top: 5px; cursor: pointer; font-weight: 500;">
+                                                Export Data
+                                            </button>
+                                        </div>
+                                    `;
+                                    
+                                    debugInfo.innerHTML = `Error: ${error.toString()} ${fallbackMessage}`;
+                                    debugInfo.style.display = 'block';
+                                    debugInfo.style.backgroundColor = "#EF4444";
+                                    debugInfo.style.color = "white";
+                                    debugInfo.style.padding = "15px";
+                                    debugInfo.style.borderRadius = "8px";
+                                    debugInfo.style.maxWidth = "500px";
+                                    debugInfo.style.margin = "20px auto";
+                                    
+                                    // Add click handler for export button
+                                    const exportButton = document.getElementById('export-report-data');
+                                    if (exportButton) {
+                                        exportButton.addEventListener('click', function() {
+                                            exportReportData(payload);
+                                        });
+                                    }
+                                    
+                                    // Make debug info stay visible until dismissed
+                                    clearTimeout(messageTimeout);
+                                    
+                                    // Add a close button
+                                    const closeButton = document.createElement('button');
+                                    closeButton.textContent = '×';
+                                    closeButton.style.position = 'absolute';
+                                    closeButton.style.top = '5px';
+                                    closeButton.style.right = '5px';
+                                    closeButton.style.background = 'transparent';
+                                    closeButton.style.border = 'none';
+                                    closeButton.style.color = 'white';
+                                    closeButton.style.fontSize = '20px';
+                                    closeButton.style.cursor = 'pointer';
+                                    
+                                    // Save original position
+                                    const originalPosition = debugInfo.style.position;
+                                    debugInfo.style.position = 'relative';
+                                    
+                                    debugInfo.appendChild(closeButton);
+                                    
+                                    closeButton.addEventListener('click', function() {
+                                        debugInfo.style.display = 'none';
+                                        debugInfo.style.position = originalPosition;
+                                    });
+                                }
+                            }
+                        });
+                    };
+                    
+                    // Start the fetch attempt
+                    attemptFetch();
+                }
+
+                // Function to test webhook connectivity before sending the actual report
+                function testWebhookConnection() {
+                    const testWebhookUrl = 'https://fluxxx.app.n8n.cloud/webhook/e3df8c17-eded-4a57-a750-b804b31efaac';
+                    
+                    console.log('Testing webhook connectivity...');
+                    
+                    return new Promise((resolve) => {
+                        // Use a simple ping payload
+                        const pingPayload = {
+                            type: 'ping',
+                            data: {
+                                timestamp: new Date().toISOString(),
+                                userId: userState.userId || 'anonymous',
+                                action: 'test_connection'
+                            }
+                        };
+                        
+                        // Set a timeout to handle very slow connections
+                        const timeoutId = setTimeout(() => {
+                            console.error('Webhook connection test timed out');
+                            resolve(false);
+                        }, 5000);
+                        
+                        fetch(testWebhookUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'Cache-Control': 'no-cache'
+                            },
+                            mode: 'cors',
+                            body: JSON.stringify(pingPayload)
+                        })
+                        .then(response => {
+                            clearTimeout(timeoutId);
+                            
+                            console.log('Webhook test response status:', response.status);
+                            if (response.ok) {
+                                console.log('Webhook connection test successful');
+                                resolve(true);
+                            } else {
+                                console.error('Webhook connection test failed with status:', response.status);
+                                resolve(false);
+                            }
+                        })
+                        .catch(error => {
+                            clearTimeout(timeoutId);
+                            
+                            console.error('Webhook connection test error:', error);
+                            resolve(false);
+                        });
                     });
                 }
 
@@ -1058,6 +1360,76 @@
                   loadSavedGender();
                   checkReportAvailability();
                   
+                  // Add keyboard shortcut for webhook testing (Shift+Alt+W)
+                  document.addEventListener('keydown', function(event) {
+                      // Check for Shift+Alt+W
+                      if (event.shiftKey && event.altKey && event.key === 'W') {
+                          console.log('Webhook test shortcut activated');
+                          manualTestWebhook();
+                      }
+                  });
+                  
+                  // Function to manually test webhook
+                  function manualTestWebhook() {
+                      showTemporaryMessage("Testing webhook connection...", "info");
+                      
+                      testWebhookConnection()
+                          .then(isConnected => {
+                              if (isConnected) {
+                                  showTemporaryMessage("Webhook connection successful!", "success");
+                              } else {
+                                  // Show a more detailed error message with the webhook URL
+                                  const debugInfo = document.getElementById('debug-info');
+                                  if (debugInfo) {
+                                      debugInfo.innerHTML = `
+                                          <div>
+                                              <p>Webhook connection failed!</p>
+                                              <p style="font-size: 12px; margin-top: 5px;">
+                                                  URL: https://fluxxx.app.n8n.cloud/webhook/e3df8c17-eded-4a57-a750-b804b31efaac
+                                              </p>
+                                              <p style="font-size: 12px; margin-top: 5px;">
+                                                  Please check your internet connection and ensure the webhook is properly configured.
+                                              </p>
+                                          </div>
+                                      `;
+                                      debugInfo.style.display = 'block';
+                                      debugInfo.style.backgroundColor = "#EF4444";
+                                      debugInfo.style.color = "white";
+                                      debugInfo.style.padding = "15px";
+                                      debugInfo.style.borderRadius = "8px";
+                                      debugInfo.style.maxWidth = "500px";
+                                      debugInfo.style.margin = "20px auto";
+                                      
+                                      clearTimeout(messageTimeout);
+                                      
+                                      // Add a close button
+                                      const closeButton = document.createElement('button');
+                                      closeButton.textContent = '×';
+                                      closeButton.style.position = 'absolute';
+                                      closeButton.style.top = '5px';
+                                      closeButton.style.right = '5px';
+                                      closeButton.style.background = 'transparent';
+                                      closeButton.style.border = 'none';
+                                      closeButton.style.color = 'white';
+                                      closeButton.style.fontSize = '20px';
+                                      closeButton.style.cursor = 'pointer';
+                                      
+                                      // Save original position
+                                      const originalPosition = debugInfo.style.position || '';
+                                      debugInfo.style.position = 'relative';
+                                      
+                                      debugInfo.appendChild(closeButton);
+                                      
+                                      closeButton.addEventListener('click', function() {
+                                          debugInfo.style.display = 'none';
+                                          debugInfo.style.position = originalPosition;
+                                      });
+                                  } else {
+                                      showTemporaryMessage("Webhook connection failed!", "error");
+                                  }
+                              }
+                          });
+                  }
               }); // End DOMContentLoaded
           } catch (error) {
               console.error("A critical error occurred:", error);
