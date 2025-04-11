@@ -183,10 +183,10 @@
              <h2>Help us personalize your experience</h2>
              <p>Please select your gender. This information helps us tailor insights in the future.</p>
              <div class="gender-button-container">
-                  <button class="gender-btn btn" data-gender="Female">Female</button>
-                  <button class="gender-btn btn" data-gender="Male">Male</button>
-                  <button class="gender-btn btn" data-gender="Non-binary">Non-binary</button>
-                  <button class="gender-btn btn" data-gender="Prefer not to say">Prefer not to say</button>
+                  <button class="gender-btn btn" data-gender="Female" onclick="handleGenderSelection({target: this})">Female</button>
+                  <button class="gender-btn btn" data-gender="Male" onclick="handleGenderSelection({target: this})">Male</button>
+                  <button class="gender-btn btn" data-gender="Non-binary" onclick="handleGenderSelection({target: this})">Non-binary</button>
+                  <button class="gender-btn btn" data-gender="Prefer not to say" onclick="handleGenderSelection({target: this})">Prefer not to say</button>
              </div>
           </div>
      </div>
@@ -227,11 +227,8 @@
              </div>
 
              <div id="step-1" class="step-container active">
-                <div class="direct-question-section">
-                    <p id="direct-question-text"></p>
-                </div>
                 <div class="rating-section">
-                    <h3 class="section-title">Your Assessment</h3>
+                    <h3 class="section-title">How much do you agree with this statement?</h3>
                     <p id="direct-statement-text" style="margin-bottom: 20px; font-weight: 500; font-style: italic; color: var(--text-color-secondary);"></p>
                     <div class="rating-images">
                        <div class="image-container"> <div class="image-box"><svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="var(--text-color-muted)" stroke-width="1.5"/><path d="M8 16C8 16 9.5 14 12 14C14.5 14 16 16 16 16" stroke="var(--text-color-muted)" stroke-width="1.5"/><path d="M9 9H9.01" stroke="var(--text-color-muted)" stroke-width="2.5"/><path d="M15 9H15.01" stroke="var(--text-color-muted)" stroke-width="2.5"/></svg></div> <div class="image-label">Low (1)</div> </div>
@@ -252,11 +249,11 @@
 
              <div id="step-2" class="step-container">
                 <div class="direct-question-section">
-                    <p class="reference-question" style="font-size: 14px; color: var(--text-color-muted); margin-bottom: 15px;">Reference question: <span id="reference-question-text"></span></p>
+                    <p class="reference-statement" style="font-size: 14px; color: var(--text-color-muted); margin-bottom: 15px;">Statement: <span id="reference-statement-text"></span></p>
                 </div>
                 <div class="feeling-section">
                     <h3 class="section-title">Immediate Reaction</h3>
-                    <label>Based on the question above, what's your immediate reaction or feeling? Select any that apply.</label>
+                    <label>When reflecting on the statement above, what feelings are alive within you? Select those that resonate.</label>
                     <div id="feeling-tags-container"></div>
                 </div>
                 <div class="action-buttons">
@@ -333,6 +330,42 @@
     </div>
 
     <script>
+        // Define gender selection handler in global scope
+        function handleGenderSelection(event) {
+            console.log("Gender button clicked", event.target);
+            const genderPopupOverlay = document.getElementById('gender-popup-overlay');
+            if (!genderPopupOverlay) { 
+                console.error("ERROR in handleGenderSelection: genderPopupOverlay element not found!"); 
+                return; 
+            }
+            const selectedGender = event.target.getAttribute('data-gender');
+            console.log("Selected gender attribute:", selectedGender);
+            if (selectedGender !== null) {
+                // Update global variable - will be used when the userState is initialized
+                window.selectedGender = selectedGender;
+                
+                // Store in session storage
+                sessionStorage.setItem('wheelOfLife_gender', selectedGender);
+                
+                // Hide the overlay
+                genderPopupOverlay.classList.add('hidden');
+                console.log("Gender selected:", selectedGender);
+                
+                // Show confirmation message
+                const debugInfo = document.getElementById('debug-info');
+                if (debugInfo) {
+                    debugInfo.textContent = "Gender selected: " + selectedGender;
+                    debugInfo.style.display = 'block';
+                    debugInfo.style.backgroundColor = "#10B981";
+                    setTimeout(() => {
+                        debugInfo.style.display = 'none';
+                    }, 2500);
+                }
+            } else { 
+                console.error("Could not read data-gender attribute from clicked element:", event.target); 
+            }
+        }
+        
         // Wrap entire script in a try...catch
         try {
             document.addEventListener('DOMContentLoaded', function() {
@@ -402,28 +435,32 @@
                 if (reportButton) reportButton.addEventListener('click', generateReport);
 
                 // --- Gender Popup Logic (Cleaned) ---
-                function handleGenderSelection(event) {
-                    if (!genderPopupOverlay) { console.error("ERROR in handleGenderSelection: genderPopupOverlay element not found!"); return; }
-                    const selectedGender = event.target.getAttribute('data-gender');
-                    if (selectedGender !== null) {
-                        userState.gender = selectedGender;
-                        sessionStorage.setItem('wheelOfLife_gender', selectedGender);
-                        genderPopupOverlay.classList.add('hidden');
-                        // console.log("Gender selected:", userState.gender); // Optional log
-                    } else { console.error("Could not read data-gender attribute from clicked element:", event.target); }
-                }
+                // The handleGenderSelection function is now global, so we don't need to redefine it here
                 
                 // Load gender from session storage if available
                 function loadSavedGender() {
+                    console.log("Loading saved gender");
+                    
+                    // First check for gender selected via the global variable (from a button click)
+                    if (window.selectedGender) {
+                        console.log("Using selected gender from global variable:", window.selectedGender);
+                        userState.gender = window.selectedGender;
+                        genderPopupOverlay.classList.add('hidden');
+                        return;
+                    }
+                    
+                    // Otherwise try to load from session storage
                     const savedGender = sessionStorage.getItem('wheelOfLife_gender');
+                    console.log("Saved gender from session storage:", savedGender);
                     if (savedGender && genderPopupOverlay) {
                         userState.gender = savedGender;
                         genderPopupOverlay.classList.add('hidden');
+                        console.log("Applied saved gender and hid overlay");
                     }
                 }
-                if (genderButtons.length > 0) { genderButtons.forEach(button => button.addEventListener('click', handleGenderSelection)); }
-                else { console.error("No gender buttons found - cannot attach listeners."); }
 
+                // No need for additional click handlers as we're using onclick attributes
+                
                 // --- Feedback Modal Logic (Cleaned) ---
                 function showFeedbackModal() { if(feedbackModal) feedbackModal.classList.add('visible'); }
                 function hideFeedbackModal() { if(feedbackModal) feedbackModal.classList.remove('visible'); }
@@ -768,11 +805,11 @@
                         progressBar.style.width = `${progressPercentage}%`;
                     }
                     
-                    // If moving to step 2, copy the question for reference
+                    // If moving to step 2, copy the statement for reference
                     if (stepNumber === 2 && userState.selectedDomain) {
-                        const referenceQuestionText = domainPanel.querySelector('#reference-question-text');
-                        if (referenceQuestionText) {
-                            referenceQuestionText.textContent = userState.selectedDomain.directQuestion;
+                        const referenceStatementText = domainPanel.querySelector('#reference-statement-text');
+                        if (referenceStatementText) {
+                            referenceStatementText.textContent = userState.selectedDomain.directStatement;
                         }
                     }
                  }
@@ -883,4 +920,151 @@
                       // Submit single domain assessment to Supabase
                       submitSingleDomainToSupabase(singleDomainData);
                       
-                      console.log(`
+                      console.log(`Submitted for Domain ${domainId}:`, userState.domainRatings[domainId]);
+                      
+                      if (!userState.completedDomains.includes(domainId)) { 
+                          userState.completedDomains.push(domainId); 
+                      }
+                      
+                      updateCompletionMarkers(); 
+                      closeDomainPanel(); 
+                      checkReportAvailability(); 
+                      showTemporaryMessage("Reflection Saved!", "success");
+                  }
+                  
+                  // Function to submit a single domain assessment to Supabase
+                  function submitSingleDomainToSupabase(domainData) {
+                      // N8n webhook URL - replace with your actual n8n webhook URL
+                      const webhookUrl = 'https://fluxxx.app.n8n.cloud/webhook/5b322439-d37f-4ae1-88e6-878e3af43fbe';
+                      
+                      // Format data to match database schema
+                      const formattedData = {
+                          type: 'domain_assessment',
+                          data: {
+                              user_id: domainData.userId,
+                              domain_id: domainData.domainId,
+                              domain_name: domainData.domainName,
+                              direct_question: domainData.directQuestion,
+                              rating: domainData.rating,
+                              selected_feelings: domainData.selectedFeelings,
+                              desired_keyword: domainData.desiredKeyword,
+                              blocker: domainData.blocker,
+                              assessment_date: domainData.assessmentDate,
+                              gender: domainData.gender
+                          }
+                      };
+                      
+                      fetch(webhookUrl, {
+                          method: 'POST',
+                          headers: {
+                              'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify(formattedData)
+                      })
+                      .then(response => {
+                          if (!response.ok) {
+                              throw new Error('Network response was not ok');
+                          }
+                          return response.json();
+                      })
+                      .then(data => {
+                          console.log('Domain assessment successfully submitted to Supabase:', data);
+                      })
+                      .catch(error => {
+                          console.error('Error submitting domain assessment:', error);
+                          // Still continue with UI flow, log error only for debugging
+                      });
+                  }
+                  
+                  // Update completion markers
+                  function updateCompletionMarkers() {
+                      if (!wheelSvg) return; 
+                      const rotatingGroup = wheelSvg.querySelector('#wheel-rotating-group'); 
+                      if (!rotatingGroup) return;
+                      
+                      if (completionCount) completionCount.textContent = userState.completedDomains.length;
+                      
+                      domains.forEach(domain => {
+                          const marker = rotatingGroup.querySelector(`#marker-${domain.id}`); 
+                          const section = rotatingGroup.querySelector(`#domain-${domain.id}`);
+                          const isCompleted = userState.completedDomains.includes(domain.id);
+                          
+                          if (marker) marker.style.display = isCompleted ? 'block' : 'none'; 
+                          if (section) section.classList.toggle('completed', isCompleted);
+                      });
+                  }
+                  
+                  // Check report availability
+                  function checkReportAvailability() { 
+                      if(reportButton) reportButton.classList.toggle('active', userState.completedDomains.length >= 3); 
+                  }
+                  
+                  // Generate report (Includes Tags)
+                  function generateReport() {
+                      console.log("generateReport called", userState.completedDomains.length);
+                      if (userState.completedDomains.length < 3) { 
+                          showTemporaryMessage("Complete at least 3 domains first.", "error"); 
+                          return; 
+                      }
+                      
+                      console.log("Showing email modal");
+                      // Show email modal to collect email
+                      showEmailModal();
+                  }
+                  
+                  // Helper: Show temporary message
+                  function showTemporaryMessage(message, type = "info") {
+                      if (!debugInfo) return; 
+                      
+                      clearTimeout(messageTimeout); 
+                      debugInfo.textContent = message; 
+                      debugInfo.style.display = 'block'; 
+                      debugInfo.classList.remove('fade-out');
+                      
+                      debugInfo.style.backgroundColor = type === "success" ? "#10B981" : (type === "error" ? "#EF4444" : "var(--accent-color-primary)");
+                      
+                      messageTimeout = setTimeout(() => { 
+                          debugInfo.classList.add('fade-out'); 
+                          setTimeout(() => { 
+                              if (debugInfo.classList.contains('fade-out')) { 
+                                  debugInfo.style.display = 'none'; 
+                                  debugInfo.classList.remove('fade-out'); 
+                              } 
+                          }, 500); 
+                      }, 2500);
+                  }
+                  
+                  // --- Attach Event Listeners for Panel (using Event Delegation) ---
+                  if(domainPanel) {
+                      domainPanel.addEventListener('click', function(event) {
+                          if (event.target && event.target.matches('#cancel-button')) { closeDomainPanel(); }
+                          if (event.target && event.target.matches('#next-step-button')) { validateAndProceed(); }
+                          if (event.target && event.target.matches('#back-button')) { goToPreviousStep(); }
+                          if (event.target && event.target.matches('#submit-button')) { submitDomainRating(); }
+                          if (event.target && event.target.matches('.feeling-tag')) { event.target.classList.toggle('selected'); } // Toggle tag selection visually
+                      });
+                      
+                      domainPanel.addEventListener('input', function(event) {
+                          if (event.target && event.target.matches('#rating-slider')) {
+                              const panelSliderValue = domainPanel.querySelector('#slider-value');
+                              if(panelSliderValue) panelSliderValue.textContent = event.target.value;
+                          }
+                      });
+                  } else { 
+                      console.error("Cannot attach panel listeners: Domain panel not found."); 
+                  }
+                  
+                  // Initial setup calls
+                  loadSavedGender();
+                  checkReportAvailability();
+                  
+              }); // End DOMContentLoaded
+          } catch (error) {
+              console.error("A critical error occurred:", error);
+              if (document.body) { 
+                  document.body.innerHTML = `<p style="color: red; font-size: 20px; padding: 20px;">Error: Application failed to load. ${error.message}</p>`; 
+              }
+          }
+      </script>
+  </body>
+  </html>
